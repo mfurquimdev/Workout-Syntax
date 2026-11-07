@@ -1,0 +1,3 @@
+/target
+# the owner's live log; tests use a copy of it when present (see build.rs)
+/Workout.md

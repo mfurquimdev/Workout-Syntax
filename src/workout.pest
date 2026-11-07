@@ -1,0 +1,142 @@
+// =====================================================================
+//  Plain Text Workout — line grammar (PEG, pest syntax)
+//
+//  The log is parsed one line at a time; `line` is the entry rule.
+//  Document structure (sessions, super-set membership) is assembled
+//  from the line sequence in src/document.rs, following the rule
+//  model-checked in tla/SupersetGrouping.tla.
+// =====================================================================
+
+line = { SOI ~ (date_line | time_line | superset_label | exercise_line | blank_line) ~ EOI }
+
+// ---------- lexical helpers ----------
+sp       = _{ (" " | "\t")+ }
+boundary = _{ &(sp | ";" | EOI) }
+number   = @{ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)? }
+count    = @{ ASCII_DIGIT+ }
+
+comment      = ${ ";" ~ sp? ~ comment_text }
+comment_text = @{ ANY* }
+trailer      = _{ sp? ~ comment? }
+
+// ---------- structural lines ----------
+blank_line = { sp? ~ comment? }
+
+date_line = { sp? ~ (link_open ~ date ~ link_close | date) ~ (sp ~ body_weight)? ~ trailer }
+date      = @{ ASCII_DIGIT{4} ~ "-" ~ ASCII_DIGIT{2} ~ "-" ~ ASCII_DIGIT{2} }
+
+// A weigh-in on the date line: `2026-11-07 82.5kg`.
+body_weight = ${ number ~ weight_unit }
+weight_unit = { ^"kg" | ^"g" | ^"lbs" | ^"lb" | ^"oz" }   // any case parses; uppercase warns
+
+// 18h15~19h40, ~17h00, 12h55~, or a start time alone: 18h15
+time_line    = { sp? ~ (start_clock ~ range_op ~ end_clock? | range_op ~ end_clock | start_clock) ~ trailer }
+clock        = _{ clock_hour ~ hour_mark ~ clock_minute }
+start_clock  = ${ clock }
+end_clock    = ${ clock }
+clock_hour   = @{ ASCII_DIGIT{1,2} }
+hour_mark    = { "h" }
+clock_minute = @{ ASCII_DIGIT{2} }
+
+superset_label = { sp? ~ label_mark ~ label_text ~ label_mark ~ trailer }
+label_mark     = { "_" }
+label_text     = @{ (!"_" ~ ANY)+ }
+
+// ---------- exercise line ----------
+//  - <name> [@<machine>] [+<initial>] [x2] [<body>] [; comment]
+exercise_line = { sp? ~ bullet ~ sp ~ exercise ~ trailer }
+bullet        = { "-" | "+" }
+exercise      = { name ~ (sp ~ machine)? ~ (sp ~ initial)? ~ (sp ~ sides ~ boundary)? ~ (sp ~ body)? }
+
+// A name is words up to the first data token. A word starts with a
+// letter (SL7026, Pulldown) or is an angle like 45º; unit words and
+// modifiers (kg, km, x2, bw) can never be part of a name.
+// `name` and `machine_name` are atomic, so each is one leaf (an angle
+// such as 45º inside a name is part of the name, not a number).
+name          = @{ name_word ~ (sp ~ name_word)* }
+name_word     = _{ !reserved_word ~ (LETTER ~ word_rest | number ~ angle_unit ~ word_rest) }
+word_rest     = _{ (!(sp | ";") ~ ANY)* }
+reserved_word = _{ (sides | bodyweight | mass_unit | dist_unit) ~ boundary }
+
+machine      = ${ at ~ machine_name }
+machine_name = @{ machine_word ~ (sp ~ name_word)* }
+machine_word = _{ !reserved_word ~ ASCII_ALPHANUMERIC ~ word_rest }
+
+initial = ${ plus ~ mass }
+// Letters in units, `bw`, `x2`/`2x` and the `x` of a set must be lowercase.
+// Uppercase still parses, so no set is lost or read as part of a name,
+// and src/parser.rs warns about it.
+sides   = { ^"x2" | ^"2x" }
+
+body = { cardio | strength }
+
+// ---------- loads ----------
+mass        = ${ number ~ mass_unit }
+mass_unit   = { ^"kg" | ^"lbs" | ^"lb" }   // any case parses; uppercase warns
+bodyweight  = ${ bw_word ~ (bw_sign ~ mass)? }
+bw_word     = { ^"bw" }                  // any case parses; uppercase warns
+bw_sign     = { plus | minus }
+incremental = ${ mass ~ step_op ~ mass }
+
+default_load = { incremental | bodyweight | mass }
+
+// ---------- strength sets ----------
+//  default weight first:   23kg 10 10 8     63kg++5lbs 12^3 8
+//  explicit sets:          12x63kg^2        39kgx12        12/11x15kg
+//  once an explicit set appears, no bare reps may follow (checked when
+//  expanding, see tla/SetExpansion.tla)
+strength = { default_load ~ (sp ~ sides ~ boundary)? ~ sp ~ set_list | set_list }
+set_list = { set_item ~ (sp ~ set_item)* }
+set_item = _{ explicit_set ~ boundary | bare_set ~ boundary }
+
+explicit_set = ${ (reps ~ by ~ set_load | mass ~ by ~ reps) ~ repeat? }
+by           = { ^"x" }
+set_load     = { bodyweight | mass }
+bare_set     = ${ reps ~ repeat? }
+reps         = ${ per_side | count }
+per_side     = ${ count ~ side_sep ~ count }
+repeat       = ${ repeat_op ~ count }
+
+// ---------- cardio ----------
+//  1.57km  20min@4.7km/h  14m28s  11:26  4.5~15⁰
+cardio        = { cardio_metric ~ (sp ~ cardio_metric)* }
+cardio_metric = _{ distance ~ boundary | duration ~ boundary | range ~ boundary }
+
+distance  = ${ number ~ dist_unit }
+dist_unit = { ^"km" | ^"mi" }
+
+duration  = ${ (clock_dur | hms) ~ (at ~ speed)? }
+clock_dur = ${ minutes ~ colon ~ seconds }
+hms       = ${ minutes ~ min_unit ~ (seconds ~ sec_unit)? | seconds ~ sec_unit }
+min_unit  = { ^"min" | ^"m" }
+sec_unit  = { ^"sec" | ^"s" }
+minutes   = @{ ASCII_DIGIT+ }
+seconds   = @{ ASCII_DIGIT+ }
+speed     = ${ number ~ speed_unit }
+speed_unit = { ^"km/h" | ^"kph" | ^"mph" }
+
+range      = ${ number ~ range_op ~ number ~ angle_unit? }
+angle_unit = { "⁰" | "°" | "º" | "%" }
+
+// ---------- operators ----------
+//  Every symbol is a named rule, so it has its own span (for precise
+//  errors and for highlighting from the parse tree).
+repeat_op = { "^" | "*" }   // 12^3  12*3
+step_op   = { "++" }        // 63kg++5lbs
+side_sep  = { "/" }         // 12/11
+range_op  = { "~" }         // 18h15~19h15  4.5~15⁰
+at        = { "@" }         // @Machine  20min@4.7km/h
+plus      = { "+" }         // +22kg  bw+10kg
+minus     = { "-" }         // bw-36kg
+colon     = { ":" }         // 11:26
+link_open  = { "[[" }       // [[2026-05-12]]
+link_close = { "]]" }
+
+// ---------- diagnostics only ----------
+//  Never reached from `line`. When a line fails, this tells whether it
+//  is an exercise whose body is a load with no reps (`- Pec Fly 39kg`),
+//  so the error can say so instead of "unrecognised token".
+load_without_reps = {
+    SOI ~ sp? ~ bullet ~ sp ~ name ~ (sp ~ machine)? ~ (sp ~ initial)? ~ (sp ~ sides ~ boundary)?
+        ~ sp ~ default_load ~ boundary ~ (sp ~ sides ~ boundary)? ~ trailer ~ EOI
+}
