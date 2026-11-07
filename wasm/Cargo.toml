@@ -1,0 +1,19 @@
+[package]
+name = "workout_wasm"
+version = "0.1.0"
+edition = "2024"
+description = "WebAssembly adapter of workout_syntax for the web app (wasm-bindgen)"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+workout_syntax = { path = "..", default-features = false }
+lsp-types = "0.97.0"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+wasm-bindgen = "=0.2.130"
+# ~2.5 kB (1.2 kB gzipped): a panic, which should never happen, logs its
+# message to the console instead of a bare "unreachable" trap
+console_error_panic_hook = "0.1.7"

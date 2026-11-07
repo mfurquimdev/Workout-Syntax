@@ -8,6 +8,7 @@ TLA+ models of its semantics.
 * `src/expand.rs` — set expansion (mirrors `tla/SetExpansion.tla`)
 * `src/document.rs` — sessions and super sets (mirrors `tla/SupersetGrouping.tla`)
 * `src/lsp/` — language server (`analysis.rs` features, `server.rs` mirrors `tla/DocumentSync.tla`)
+* `wasm/` — WebAssembly adapter for the web app (see below)
 * `tests/` — spec examples, grammar cases, the real log, model conformance, LSP, merge, tokens
 
 ```sh
@@ -79,3 +80,44 @@ cargo run --bin workout-server -- --log copy/Workout.md --app ../app/.dist \
   (Neovim) are committed before merging. The log is never created.
 - Requests must name an allowed `Host`, and an `Origin` must match it. No
   CORS headers are sent.
+
+## Features
+
+| feature | default | what it adds |
+|---|---|---|
+| `native` | yes | `lsp::server` (lsp-server), `server` (std::net), `sync` (git via std::process), the `workout-lsp` and `workout-server` binaries |
+
+Without `native` (`default-features = false`) the crate still has the
+parser, tokens, documents, merge and `lsp::analysis` (pure functions on
+lsp-types), which is what the WebAssembly build uses. `workout-lint` needs
+no feature.
+
+## WebAssembly module
+
+`wasm/` is a workspace member (`workout_wasm`) that exports the language
+functions to JavaScript with wasm-bindgen; the JS API is section 1 of the
+web app's `docs/web-app-interfaces.md`. It converts every column between
+the library's characters and UTF-16 code units (JS string indexes), and
+every export is total: out-of-range positions give empty results.
+
+Needs `rustup target add wasm32-unknown-unknown` and
+`cargo install wasm-bindgen-cli --version 0.2.130` (the CLI must match the
+`wasm-bindgen` crate, pinned to `=0.2.130`). `wasm-opt` is used when on the
+`PATH`.
+
+```sh
+wasm/build.sh                     # -> wasm/pkg/workout_wasm.js, workout_wasm_bg.wasm (git-ignored)
+wasm/build.sh ../app/public/wasm  # where the web app loads it from
+```
+
+It builds with the `wasm-release` profile (`opt-level = "z"`, LTO, one
+codegen unit, `panic = "abort"`; native release builds are unchanged) and
+drops the name section: about 306 kB, 109 kB gzipped.
+
+```sh
+cargo test -p workout_wasm        # the conversions, natively
+wasm/build.sh && node --test wasm/tests/js/   # the built module in Node
+cd wasm && bun install && bun run test:browser  # Chromium smoke test (Playwright)
+```
+
+`WORKOUT_WASM_PKG=<dir>` points the Node and browser tests at another build.
