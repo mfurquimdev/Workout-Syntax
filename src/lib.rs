@@ -7,7 +7,9 @@ pub mod expand;
 pub mod merge;
 pub mod parser;
 pub mod removals;
+pub mod server;
 pub mod session;
+pub mod sync;
 pub mod tokens;
 
 pub use ast::*;

@@ -52,3 +52,30 @@ tokens (sync conflicts in fixed red, their date orange). See
 vim.opt.rtp:append('/path/to/plain-text-workout/editors/nvim')
 require('workout').setup({ dirs = { '~/workout-log' } })
 ```
+
+## Sync server
+
+`workout-server` keeps the master log and merges each device's changes into
+it (`src/sync.rs`, `src/server.rs`). It uses only the standard library and
+`serde_json`.
+
+```sh
+cargo run --bin workout-server -- --log ~/workout-log/Workout.md            # 127.0.0.1:8484
+cargo run --bin workout-server -- --log copy/Workout.md --app ../app/.dist \
+    --allow-host workout.example.com
+```
+
+- `GET /api/log` returns `{protocol, text}`, for a device's first open.
+- `POST /api/sync {protocol, device, base, text}` returns one of:
+  - `200 {status: "merged", text, notices, written}`
+  - `409 {status: "confirm", removal_id, removals}`: the merge would remove
+    sessions, sets or reps the device has (a stale Neovim save, say). Nothing
+    is written. Resend with `confirm: removal_id` to remove, or `keep: true`
+    to keep the device's version.
+  - `409 {status: "wait", reason}` while a date line is unfinished
+  - `{status: "error", message}`: an old protocol (409), an empty log (400),
+    the file looking mid-save (503)
+- Every change is committed to the log's git repository, and outside edits
+  (Neovim) are committed before merging. The log is never created.
+- Requests must name an allowed `Host`, and an `Origin` must match it. No
+  CORS headers are sent.
