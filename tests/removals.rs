@@ -151,3 +151,56 @@ fn empty_session_removed() {
         vec![Removal::Session { date: s("2026-01-02"), exercises: 0, sets: 0 }]
     );
 }
+
+// ---------- lines with nothing to count ----------
+
+#[test]
+fn a_line_the_parser_cannot_read_is_protected_too() {
+    // found by the web app's integration test: this line was dropped by a
+    // stale save without the removal question
+    let device = "2026-11-07\n- Row 12x20kg\n- Plank BW 60s^2\n";
+    let merged = "2026-11-07\n- Row 12x20kg\n";
+    let r = removals(device, merged);
+    assert_eq!(r.len(), 1, "{r:?}");
+    assert_eq!(r[0].to_string(), "removes the line `- Plank BW 60s^2` from 2026-11-07");
+}
+
+#[test]
+fn times_labels_and_comments_are_protected() {
+    let device = "; my log\n2026-11-07\n18h00~19h00\n_Super_\n+ A 12x1kg\n; felt strong\n";
+    let merged = "2026-11-07\n+ A 12x1kg\n";
+    let lines: Vec<String> = removals(device, merged).iter().map(|r| r.to_string()).collect();
+    assert_eq!(
+        lines,
+        [
+            "removes the line `; my log` before the first session",
+            "removes the line `18h00~19h00` from 2026-11-07",
+            "removes the line `_Super_` from 2026-11-07",
+            "removes the line `; felt strong` from 2026-11-07",
+        ]
+    );
+}
+
+#[test]
+fn an_unreadable_line_kept_as_a_conflict_comment_is_not_removed() {
+    let device = "2026-11-07\n- Plank BW 60s^2\n";
+    let merged = "2026-11-07\n- Plank BW 45s\n; conflict 2026-11-07 phone: - Plank BW 60s^2\n";
+    assert!(removals(device, merged).iter().all(|r| !matches!(r, Removal::Line { .. })), "{:?}", removals(device, merged));
+}
+
+#[test]
+fn a_whole_removed_session_is_reported_once() {
+    let device = "2026-11-06\n- Row 12x20kg\n2026-11-07\n18h00~19h00\n- Plank BW 60s^2\n";
+    let merged = "2026-11-06\n- Row 12x20kg\n";
+    let r = removals(device, merged);
+    assert_eq!(r.len(), 1, "{r:?}");
+    assert!(matches!(r[0], Removal::Session { .. }));
+}
+
+#[test]
+fn repeated_lines_count_each_time() {
+    let device = "2026-11-07\n; note\n; note\n";
+    let merged = "2026-11-07\n; note\n";
+    assert_eq!(removals(device, merged).len(), 1);
+    assert!(removals(device, device).is_empty());
+}

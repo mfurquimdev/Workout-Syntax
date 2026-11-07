@@ -303,3 +303,15 @@ fn static_app_files_stay_inside_the_app_directory() {
     assert_eq!(get("/../Workout.md").0, 404);
     assert_eq!(get("/%2e%2e/Workout.md").2, "<p>app</p>", "encoded dots are only a file name");
 }
+
+#[test]
+fn a_stale_save_of_an_unreadable_line_asks_too() {
+    let (dir, store) = setup(LOG, true);
+    let synced = format!("{LOG}- Plank BW 60s^2\n");
+    let SyncReply::Merged { written, .. } = store.sync(&req(LOG, &synced)) else { panic!() };
+    assert!(written);
+    std::fs::write(dir.join("Workout.md"), LOG).unwrap(); // the stale save
+    let SyncReply::Confirm { removals, .. } = store.sync(&req(&synced, &synced)) else { panic!("must ask") };
+    assert_eq!(removals, ["removes the line `- Plank BW 60s^2` from 2026-11-06"]);
+    assert_eq!(file(&dir), LOG);
+}
