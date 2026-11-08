@@ -23,7 +23,7 @@
 //! one side, moves one into date order, or puts two sessions next to each
 //! other that were not neighbours in either input, and the first of the
 //! two has no blank line after it, the merge writes one between them
-//! ([`separate`]). Sessions that neither side touched keep their
+//! (`separate`). Sessions that neither side touched keep their
 //! separators as written, even when they have none.
 //!
 //! The merge works on one file. Each block's file can be chosen from its

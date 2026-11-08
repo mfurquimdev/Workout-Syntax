@@ -1,3 +1,9 @@
 /target
 # the owner's live log; tests use a copy of it when present (see build.rs)
 /Workout.md
+# written by tla/check.sh: the downloaded TLC jar, TLC's state directory,
+# and the trace files TLC writes when a property is violated
+/tla/tla2tools.jar
+/tla/states/
+/tla/*_TTrace_*.tla
+/tla/*_TTrace_*.bin

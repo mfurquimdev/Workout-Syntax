@@ -1,5 +1,6 @@
 #!/bin/sh
-# Model-check both specs with TLC (needs Java; tla2tools.jar is fetched if missing).
+# Model-check the three specs (SetExpansion, SupersetGrouping, DocumentSync) with TLC.
+# Needs Java; tla2tools.jar (v1.8.0) is downloaded here if missing.
 set -e
 cd "$(dirname "$0")"
 [ -f tla2tools.jar ] || curl -sSL -o tla2tools.jar https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar

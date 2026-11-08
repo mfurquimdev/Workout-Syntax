@@ -10,7 +10,6 @@ expect.
 |---|---|
 | `Workout.md` | A verbatim copy of the project's training log, taken at one point in time. It is the log the tests use on a fresh clone, and the second log for tests that run on both. |
 | `body_types.txt` | One line per line of `Workout.md`: the line number, a tab, and what the line parses to (`blank`, `date`, `time`, `label`, a parse error, or an exercise body: `empty`, `strength` with its expanded sets, or `cardio` with its metrics). Written by `tests/body_types.rs` before timed sets existed (`WRITE_BODY_TYPES=1 cargo test --test body_types`), so that test can check timed sets changed no existing line. |
-| `README` | A one-line note that `Workout.md` is a verbatim copy of the log. |
 
 ## How they are used
 

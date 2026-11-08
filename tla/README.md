@@ -32,5 +32,6 @@ tla/check.sh
 
 ## Generated files
 
-`check.sh` downloads `tla/tla2tools.jar`. TLC can also leave a `states/`
-directory here. Neither is listed in `.gitignore`, so do not commit them.
+`check.sh` downloads `tla/tla2tools.jar`. TLC writes a `states/`
+directory here, and trace files (`<Spec>_TTrace_<time>.tla` and `.bin`)
+when a property is violated. `.gitignore` lists all of them.

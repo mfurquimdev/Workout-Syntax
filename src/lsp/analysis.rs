@@ -490,7 +490,7 @@ pub fn inlay_hints(text: &str) -> Vec<InlayHint> {
 // ---------- semantic tokens ----------
 
 /// The LSP name of a token kind: `workout` + the camel-cased
-/// [`TokenKind::name`] (`date_bracket` → `workoutDateBracket`), so the
+/// [`TokenKind::name`](crate::TokenKind::name) (`date_bracket` → `workoutDateBracket`), so the
 /// types never clash with the standard ones (`comment`, `operator`, …)
 /// and editors can colour them separately (`@lsp.type.workoutDate`).
 pub fn semantic_token_type_name(kind: crate::TokenKind) -> String {
@@ -505,7 +505,7 @@ pub fn semantic_token_type_name(kind: crate::TokenKind) -> String {
     out
 }
 
-/// The legend: one type per [`TokenKind::ALL`] entry, in that order, so
+/// The legend: one type per [`TokenKind::ALL`](crate::TokenKind::ALL) entry, in that order, so
 /// a token's type index is the kind's position there. No modifiers.
 /// `invalid` is included: unrecognised text is sent as `workoutInvalid`
 /// so editors can flag it while the line is being typed.
