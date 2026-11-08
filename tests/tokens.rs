@@ -1,7 +1,7 @@
 //! The highlighting tokenizer: never fails, agrees with the parser on
 //! every line the parser accepts, and stays useful on half-typed lines.
 
-use workout_syntax::{parse_line, tokenize_line, Body, CardioMetric, Line, Reps, SetItem, Token, TokenKind};
+use workout_syntax::{parse_line, tokenize_line, Body, CardioMetric, Effort, Line, Reps, SetItem, Token, TokenKind};
 
 const LOGS: [&str; 2] = [include_str!(concat!(env!("OUT_DIR"), "/live.md")), include_str!("fixtures/Workout.md")];
 
@@ -85,13 +85,19 @@ fn check_agreement(line: &str, parsed: &Line) {
                     let reps: usize = items
                         .iter()
                         .map(|i| match i {
-                            SetItem::Bare { reps, .. } | SetItem::Explicit { reps, .. } => match reps {
-                                Reps::Both(_) => 1,
-                                Reps::PerSide { .. } => 2,
+                            SetItem::Bare { effort, .. } | SetItem::Explicit { effort, .. } => match effort {
+                                Effort::Reps(Reps::Both(_)) => 1,
+                                Effort::Reps(Reps::PerSide { .. }) => 2,
+                                Effort::Hold { .. } => 0,
                             },
                         })
                         .sum();
                     assert_eq!(kinds(K::Reps).len(), reps, "{line:?}: {:?}", toks(line));
+                    // a hold is one or two duration numbers (`60s`, `1m30s`, `1:30`)
+                    let holds = items.iter().filter(|i| i.effort().is_hold()).count();
+                    let durations = kinds(K::Duration).len();
+                    assert!(holds <= durations && durations <= 2 * holds, "{line:?}: {:?}", toks(line));
+                    assert!(kinds(K::Distance).is_empty() && kinds(K::Speed).is_empty(), "{line:?}");
                 }
                 Body::Cardio(metrics) => {
                     let count = |f: fn(&CardioMetric) -> bool| metrics.iter().filter(|m| f(m)).count();
@@ -199,6 +205,7 @@ fn deterministic_fuzz_exercise_lines() {
         "bw+10lbs", "63kg++5lbs", "12", "12^3", "12*2", "12/11", "12x63kg", "12X63KG^2", "39kgx12", "12/11x15kg",
         "12xbw", "12xbw-10kg", "1.57km", "2mi", "20min", "14m28s", "5min55sec", "11:26", "20min@4.7km/h",
         "12m@6kph", "4.5~15⁰", "1~2%", "3~4", "Machine", "Up", ";", "; note", ";x", "12x", "x", "kg", "km",
+        "60s", "60s^2", "45sec", "1m30s*3", "1:30", "60sx20kg", "20kgx60s^2", "60sxbw", "1MIN", "0s", "30kg",
     ];
     let mut rng = XorShift(0x2545_F491_4F6C_DD1D);
     let mut accepted = 0;
@@ -567,4 +574,28 @@ fn invalid_parts() {
     expect("- Treadmill km 16min", &[("bullet", "-"), ("exercise", "Treadmill"), ("invalid", "km"), ("duration", "16"), ("unit", "min")]);
     expect("2026-11-07x", &[("date", "2026-11-07"), ("invalid", "x")]);
     expect("18h15~19h15 late", &[("time", "18h15"), ("operator", "~"), ("time", "19h15"), ("invalid", "late")]);
+}
+
+#[test]
+fn timed_sets() {
+    // a hold in a strength line is a `duration`, as in cardio
+    expect(
+        "- Plank bw 60s^2",
+        &[("bullet", "-"), ("exercise", "Plank"), ("bw", "bw"), ("duration", "60"), ("unit", "s"), ("operator", "^"), ("repeat", "2")],
+    );
+    expect(
+        "- Farmer Walk 30kg 1m30s",
+        &[("bullet", "-"), ("exercise", "Farmer Walk"), ("load", "30"), ("unit", "kg"), ("duration", "1"), ("unit", "m"), ("duration", "30"), ("unit", "s")],
+    );
+    expect(
+        "- Hang 60sx20kg 20kgx1:30",
+        &[
+            ("bullet", "-"), ("exercise", "Hang"),
+            ("duration", "60"), ("unit", "s"), ("operator", "x"), ("load", "20"), ("unit", "kg"),
+            ("load", "20"), ("unit", "kg"), ("operator", "x"), ("duration", "1"), ("operator", ":"), ("duration", "30"),
+        ],
+    );
+    for line in ["- Plank bw 60s^2", "- Plank BW 45SEC 30s", "- Farmer Walk 30kg 40s^3", "- Hang 60sx20kg 20kgx1:30", "- Plank 60s*2"] {
+        assert!(check(line), "{line} parses");
+    }
 }

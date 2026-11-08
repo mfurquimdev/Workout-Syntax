@@ -13,6 +13,9 @@ pub enum ExpandError {
     MissingDefaultWeight { item: usize },
     /// Rule R2: bare reps may not follow an explicit set (`6x82.5lbs`).
     BareRepsAfterExplicit { item: usize },
+    /// Rule R2 for timed sets: a bare hold (`45s`) may not follow an
+    /// explicit one (`60sx20kg`).
+    BareHoldAfterExplicit { item: usize },
     /// The line would expand to more than [`MAX_SETS`] sets.
     TooManySets { sets: u64 },
 }
@@ -31,6 +34,11 @@ impl std::fmt::Display for ExpandError {
                 "set {item} has reps only, but an earlier set gave an explicit weight; \
                  once a set is written as RxW, the following ones must be too"
             ),
+            ExpandError::BareHoldAfterExplicit { item } => write!(
+                f,
+                "set {item} has a time only, but an earlier set gave an explicit weight; \
+                 once a set is written as TxW (60sx20kg), the following ones must be too"
+            ),
             ExpandError::TooManySets { sets } => {
                 write!(f, "this line expands to {sets} sets, over the limit of {MAX_SETS}")
             }
@@ -42,16 +50,15 @@ impl std::error::Error for ExpandError {}
 
 impl Exercise {
     /// Every performed set with the total load moved:
-    /// `initial + sides * written load`.
+    /// `initial + sides * written load`. A bare timed set with no default
+    /// load (`- Plank 60s^2`) is held at body weight.
     pub fn expand(&self) -> Result<Vec<WorkSet>, ExpandError> {
         let Body::Strength { default, items } = &self.body else {
             return Ok(Vec::new());
         };
         let sets: u64 = items
             .iter()
-            .map(|i| match *i {
-                SetItem::Bare { times, .. } | SetItem::Explicit { times, .. } => times as u64,
-            })
+            .map(|i| i.times() as u64)
             .sum();
         if sets > MAX_SETS {
             return Err(ExpandError::TooManySets { sets });
@@ -68,10 +75,16 @@ impl Exercise {
         let mut seen_explicit = false;
         for (i, item) in items.iter().enumerate() {
             match *item {
-                SetItem::Bare { reps, times } => {
-                    let Some(d) = default else {
-                        return Err(ExpandError::MissingDefaultWeight { item: i + 1 });
+                SetItem::Bare { effort, times } => {
+                    const BODY_WEIGHT: DefaultLoad = DefaultLoad::Fixed(Load { bodyweight: true, mass: Mass::ZERO });
+                    let d = match default {
+                        Some(d) => d,
+                        None if effort.is_hold() => &BODY_WEIGHT,
+                        None => return Err(ExpandError::MissingDefaultWeight { item: i + 1 }),
                     };
+                    if seen_explicit && effort.is_hold() {
+                        return Err(ExpandError::BareHoldAfterExplicit { item: i + 1 });
+                    }
                     if seen_explicit {
                         return Err(ExpandError::BareRepsAfterExplicit { item: i + 1 });
                     }
@@ -82,14 +95,14 @@ impl Exercise {
                                 Load::mass(base.plus(inc.times(step)))
                             }
                         };
-                        out.push(WorkSet { reps, load: total(written) });
+                        out.push(WorkSet { effort, load: total(written) });
                         step += 1;
                     }
                 }
-                SetItem::Explicit { reps, load, times } => {
+                SetItem::Explicit { effort, load, times } => {
                     seen_explicit = true;
                     for _ in 0..times {
-                        out.push(WorkSet { reps, load: total(load) });
+                        out.push(WorkSet { effort, load: total(load) });
                     }
                 }
             }

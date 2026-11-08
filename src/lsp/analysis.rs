@@ -4,7 +4,7 @@
 //! Positions: the library counts characters; LSP counts UTF-16 code
 //! units. Conversion happens only in this module.
 
-use crate::ast::{Body, BodyWeight, CardioMetric, Exercise, Line, WeightUnit, WorkSet};
+use crate::ast::{describe_seconds, Body, BodyWeight, CardioMetric, Exercise, Line, WeightUnit, WorkSet};
 use crate::document::{parse_document, Entry, Session, Severity};
 use crate::parser::parse_line;
 use lsp_types::*;
@@ -44,13 +44,29 @@ fn fmt1(x: f64) -> String {
 
 struct Totals {
     sets: usize,
+    /// repetitions of the sets with reps
     reps: u32,
+    /// seconds held over the timed sets, `None` when there are none
+    held: Option<u32>,
     volume: Option<f64>,
 }
 
 fn totals(sets: &[WorkSet]) -> Totals {
     let volume = sets.iter().filter_map(WorkSet::volume_kg).fold(None, |a, v| Some(a.unwrap_or(0.0) + v));
-    Totals { sets: sets.len(), reps: sets.iter().map(|s| s.reps.total()).sum(), volume }
+    let held = sets.iter().filter_map(|s| s.effort.hold_seconds()).fold(None, |a, v| Some(a.unwrap_or(0) + v));
+    Totals { sets: sets.len(), reps: sets.iter().map(|s| s.effort.reps()).sum(), held, volume }
+}
+
+impl Totals {
+    /// `37 reps`, `2 min held`, or both when a session has reps and holds;
+    /// reps are always shown when there is no hold.
+    fn work(&self) -> String {
+        match self.held {
+            None => format!("{} reps", self.reps),
+            Some(h) if self.reps == 0 => format!("{} held", describe_seconds(h)),
+            Some(h) => format!("{} reps · {} held", self.reps, describe_seconds(h)),
+        }
+    }
 }
 
 /// The written prescription after the name, without the comment:
@@ -176,13 +192,20 @@ fn exercise_hover(ex: &Exercise) -> String {
         Body::Strength { .. } => match ex.expand() {
             Err(e) => out.push_str(&format!("⚠ {e}")),
             Ok(sets) => {
-                out.push_str("| # | Reps | Load | kg |\n|--:|--:|:--|--:|\n");
+                // a line's sets are all reps or all timed
+                let timed = sets.first().is_some_and(|s| s.effort.is_hold());
+                let column = if timed { "Hold" } else { "Reps" };
+                out.push_str(&format!("| # | {column} | Load | kg |\n|--:|--:|:--|--:|\n"));
                 for (i, s) in sets.iter().enumerate() {
                     let kg = if s.load.bodyweight { "bw".to_string() } else { fmt1(s.load.mass.as_kg()) };
-                    out.push_str(&format!("| {} | {} | {} | {} |\n", i + 1, s.reps, s.load, kg));
+                    let effort = match s.effort.hold_seconds() {
+                        Some(h) => describe_seconds(h),
+                        None => s.effort.to_string(),
+                    };
+                    out.push_str(&format!("| {} | {} | {} | {} |\n", i + 1, effort, s.load, kg));
                 }
                 let t = totals(&sets);
-                out.push_str(&format!("\n{} sets · {} reps", t.sets, t.reps));
+                out.push_str(&format!("\n{} sets · {}", t.sets, t.work()));
                 if let Some(v) = t.volume {
                     out.push_str(&format!(" · {} kg volume", fmt1(v)));
                 }
@@ -238,7 +261,7 @@ fn session_hover(s: &Session) -> String {
     }
     let all: Vec<WorkSet> = exercises(s).filter_map(|e| e.expand().ok()).flatten().collect();
     let t = totals(&all);
-    out.push_str(&format!("\n\n{} exercises · {} sets · {} reps", exercises(s).count(), t.sets, t.reps));
+    out.push_str(&format!("\n\n{} exercises · {} sets · {}", exercises(s).count(), t.sets, t.work()));
     if let Some(v) = t.volume {
         out.push_str(&format!(" · {} kg volume", fmt1(v)));
     }
@@ -414,7 +437,8 @@ pub fn folding(text: &str) -> Vec<FoldingRange> {
 
 // ---------- inlay hints ----------
 
-/// `37 reps · 1134 kg` at the end of every strength line that expands.
+/// `37 reps · 1134 kg` at the end of every strength line that expands;
+/// `2 min held` for a line of timed sets (a hold moves no volume).
 pub fn inlay_hints(text: &str) -> Vec<InlayHint> {
     let lines: Vec<&str> = text.lines().collect();
     let doc = parse_document(text);
@@ -426,8 +450,8 @@ pub fn inlay_hints(text: &str) -> Vec<InlayHint> {
             let sets = ex.expand().ok().filter(|s| !s.is_empty())?;
             let t = totals(&sets);
             let label = match t.volume {
-                Some(v) => format!("{} reps · {} kg", t.reps, fmt1(v)),
-                None => format!("{} reps", t.reps),
+                Some(v) => format!("{} · {} kg", t.work(), fmt1(v)),
+                None => t.work(),
             };
             Some(InlayHint {
                 position: Position::new(ex.line as u32 - 1, line_end(lines[ex.line - 1])),

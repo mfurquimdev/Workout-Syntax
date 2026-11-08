@@ -1,9 +1,11 @@
-//! What a merge would take away from a device: sessions, exercises, sets
-//! and reps the device has that the merged text lost or reduced.
+//! What a merge would take away from a device: sessions, exercises, sets,
+//! reps and hold times the device has that the merged text lost or reduced.
 //!
 //! Sessions are compared by date, exercises by name and machine (ignoring
 //! case), sets by expanding each exercise ([`Exercise::expand`]) and
-//! comparing them in order. A changed load is an edit, not a removal.
+//! comparing them in order; a timed set counts as a set like any other.
+//! A changed load is an edit, not a removal, and so is a set changed
+//! from reps to a hold or back.
 //! A device line kept in the merged text as a `; conflict` comment still
 //! counts as present, since its text survives. A session whose workout
 //! now sits under a date the device did not have was moved, not removed.
@@ -11,7 +13,7 @@
 use std::collections::BTreeMap;
 use std::fmt;
 
-use crate::ast::{Exercise, Line, WorkSet};
+use crate::ast::{describe_seconds, Effort, Exercise, Line, WorkSet};
 use crate::document::{Entry, parse_document};
 use crate::merge::{date_key, parse_conflict};
 use crate::parser::parse_line;
@@ -26,6 +28,8 @@ pub enum Removal {
     Sets { date: String, name: String, before: usize, after: usize },
     /// Set number `set` (1-based) has fewer reps.
     Reps { date: String, name: String, set: usize, before: u32, after: u32 },
+    /// Timed set number `set` (1-based) is held for less time.
+    Hold { date: String, name: String, set: usize, before_seconds: u32, after_seconds: u32 },
     /// The exercise has fewer lines, such as a second treadmill run.
     Lines { date: String, name: String, before: usize, after: usize },
     /// A line with nothing to count (one the parser cannot read, a time,
@@ -41,6 +45,7 @@ impl Removal {
             | Removal::Exercise { date, .. }
             | Removal::Sets { date, .. }
             | Removal::Reps { date, .. }
+            | Removal::Hold { date, .. }
             | Removal::Lines { date, .. }
             | Removal::Line { date, .. } => date,
         }
@@ -66,6 +71,12 @@ impl fmt::Display for Removal {
             Removal::Reps { date, name, set, before, after } => {
                 write!(f, "reduces set {set} of {name} on {date} from {before} to {after} reps")
             }
+            Removal::Hold { date, name, set, before_seconds, after_seconds } => write!(
+                f,
+                "reduces set {set} of {name} on {date} from {} to {}",
+                describe_seconds(*before_seconds),
+                describe_seconds(*after_seconds)
+            ),
             Removal::Lines { date, name, before, after } => {
                 write!(f, "removes {} of {name} on {date} ({before} to {after})", plural(before - after, "line"))
             }
@@ -140,9 +151,21 @@ fn losses(date: &str, before: &Workout, after: &Workout) -> Vec<Removal> {
             out.push(Removal::Sets { date, name, before: b.sets.len(), after: a.sets.len() });
             continue;
         }
-        let fewer = b.sets.iter().zip(&a.sets).enumerate().find(|(_, (x, y))| y.reps.total() < x.reps.total());
-        if let Some((i, (x, y))) = fewer {
-            out.push(Removal::Reps { date, name, set: i + 1, before: x.reps.total(), after: y.reps.total() });
+        let fewer = b.sets.iter().zip(&a.sets).enumerate().find_map(|(i, (x, y))| match (x.effort, y.effort) {
+            (Effort::Reps(x), Effort::Reps(y)) if y.total() < x.total() => {
+                Some(Removal::Reps { date: date.clone(), name: name.clone(), set: i + 1, before: x.total(), after: y.total() })
+            }
+            (Effort::Hold { seconds: x }, Effort::Hold { seconds: y }) if y < x => Some(Removal::Hold {
+                date: date.clone(),
+                name: name.clone(),
+                set: i + 1,
+                before_seconds: x,
+                after_seconds: y,
+            }),
+            _ => None,
+        });
+        if let Some(r) = fewer {
+            out.push(r);
         } else if a.lines < b.lines && a.sets.len() == b.sets.len() && b.sets.is_empty() {
             out.push(Removal::Lines { date, name, before: b.lines, after: a.lines });
         }

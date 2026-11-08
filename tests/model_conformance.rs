@@ -39,9 +39,9 @@ fn exercise(input: &[(Kind, u32)], has_default: bool) -> Exercise {
         .iter()
         .enumerate()
         .map(|(i, &(k, times))| match k {
-            Kind::Bare => SetItem::Bare { reps: Reps::Both(10), times },
+            Kind::Bare => SetItem::Bare { effort: Effort::Reps(Reps::Both(10)), times },
             Kind::Explicit => SetItem::Explicit {
-                reps: Reps::Both(10),
+                effort: Effort::Reps(Reps::Both(10)),
                 load: Load::mass(Mass::kg(1000.0 + i as f64)),
                 times,
             },

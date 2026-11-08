@@ -280,7 +280,7 @@ fn body(pair: Pair<Rule>, ex: &mut Exercise) -> Result<(), ParseError> {
                 match p.as_rule() {
                     Rule::default_load => default = Some(default_load(p.into_inner().next().unwrap())?),
                     Rule::sides => ex.sides = 2,
-                    Rule::set_list => items = p.into_inner().map(set_item).collect::<Result<_, _>>()?,
+                    Rule::set_list => items = set_list(p)?,
                     _ => {}
                 }
             }
@@ -380,6 +380,53 @@ fn repeat(pair: Pair<Rule>) -> Result<u32, ParseError> {
     int(&count, MAX_REPEATS, |n| format!("{n} repeats is over the limit of {MAX_REPEATS}"))
 }
 
+/// The sets of a strength line, which are all reps or all timed.
+fn set_list(pair: Pair<Rule>) -> Result<Vec<SetItem>, ParseError> {
+    let mut items: Vec<SetItem> = Vec::new();
+    for p in pair.into_inner() {
+        let item = set_item(p.clone())?;
+        if let Some(first) = items.first() {
+            let (was, is) = (first.effort().is_hold(), item.effort().is_hold());
+            if was != is {
+                let text = p.as_str();
+                let message = if is {
+                    format!("`{text}` is a timed set, but the sets before it are reps: a line has reps or timed sets, not both, so write them on two lines")
+                } else {
+                    format!("`{text}` is reps, but the sets before it are timed: a line has reps or timed sets, not both, so write them on two lines")
+                };
+                return Err(error_at(&p, message));
+            }
+        }
+        items.push(item);
+    }
+    Ok(items)
+}
+
+/// The seconds of a `clock_dur` or `hms` pair (`11:26`, `14m28s`, `45s`),
+/// each part checked against [`MAX_NUMBER`].
+fn time_seconds(pair: Pair<Rule>) -> Result<u32, ParseError> {
+    let mut seconds = 0;
+    for q in pair.into_inner().filter(|q| matches!(q.as_rule(), Rule::minutes | Rule::seconds)) {
+        let what = if q.as_rule() == Rule::minutes { "minutes" } else { "seconds" };
+        let n = int(&q, MAX_NUMBER, |n| format!("{n} {what} is over the limit of {MAX_NUMBER}"))?;
+        match q.as_rule() {
+            Rule::minutes => seconds += n * 60,
+            _ => seconds += n,
+        }
+    }
+    Ok(seconds)
+}
+
+/// A timed set's hold time, which must be above 0.
+fn hold(pair: Pair<Rule>) -> Result<Effort, ParseError> {
+    let seconds = time_seconds(pair.clone().into_inner().next().unwrap())?;
+    if seconds == 0 {
+        let text = pair.as_str();
+        return Err(error_at(&pair, format!("a timed set of {text} holds for no time: a hold lasts at least 1s")));
+    }
+    Ok(Effort::Hold { seconds })
+}
+
 fn set_item(pair: Pair<Rule>) -> Result<SetItem, ParseError> {
     let rule = pair.as_rule();
     let mut r = None;
@@ -387,7 +434,8 @@ fn set_item(pair: Pair<Rule>) -> Result<SetItem, ParseError> {
     let mut times = 1;
     for p in pair.into_inner() {
         match p.as_rule() {
-            Rule::reps => r = Some(reps(p)?),
+            Rule::reps => r = Some(Effort::Reps(reps(p)?)),
+            Rule::hold => r = Some(hold(p)?),
             Rule::mass => load = Some(Load::mass(mass(p)?)),
             Rule::set_load => {
                 let q = p.into_inner().next().unwrap();
@@ -400,10 +448,10 @@ fn set_item(pair: Pair<Rule>) -> Result<SetItem, ParseError> {
             _ => {}
         }
     }
-    let reps = r.unwrap();
+    let effort = r.unwrap();
     Ok(match rule {
-        Rule::explicit_set => SetItem::Explicit { reps, load: load.unwrap(), times },
-        _ => SetItem::Bare { reps, times },
+        Rule::explicit_set | Rule::explicit_hold => SetItem::Explicit { effort, load: load.unwrap(), times },
+        _ => SetItem::Bare { effort, times },
     })
 }
 
@@ -420,16 +468,7 @@ fn cardio_metric(pair: Pair<Rule>) -> Result<CardioMetric, ParseError> {
             let mut speed_kmh = None;
             for p in pair.into_inner() {
                 match p.as_rule() {
-                    Rule::clock_dur | Rule::hms => {
-                        for q in p.into_inner().filter(|q| matches!(q.as_rule(), Rule::minutes | Rule::seconds)) {
-                            let what = if q.as_rule() == Rule::minutes { "minutes" } else { "seconds" };
-                            let n = int(&q, MAX_NUMBER, |n| format!("{n} {what} is over the limit of {MAX_NUMBER}"))?;
-                            match q.as_rule() {
-                                Rule::minutes => seconds += n * 60,
-                                _ => seconds += n,
-                            }
-                        }
-                    }
+                    Rule::clock_dur | Rule::hms => seconds += time_seconds(p)?,
                     Rule::speed => {
                         let (number, unit) = number_and_unit(p);
                         let v = real(&number, MAX_NUMBER, |n| format!("a speed of {n}{unit} is over the limit of {MAX_NUMBER}{unit}"))?;

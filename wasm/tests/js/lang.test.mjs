@@ -112,6 +112,24 @@ test("hover", () => {
   assert.equal(lang.hover(LOG, LINES.indexOf(""), 0), undefined)
 })
 
+test("timed sets: - Plank bw 60s^2", () => {
+  const text = "2026-11-07\n- Plank bw 60s^2\n"
+  assert.deepEqual(JSON.parse(lang.diagnostics(text)), [])
+  assert.equal(
+    lang.hover(text, 1, 3),
+    "**Plank**\n\n| # | Hold | Load | kg |\n|--:|--:|:--|--:|\n| 1 | 1 min | bw | bw |\n| 2 | 1 min | bw | bw |\n\n2 sets · 2 min held",
+  )
+  assert.deepEqual(tokens("- Plank bw 60s^2"), [
+    ["-", "bullet"], ["Plank", "exercise"], ["bw", "bw"],
+    ["60", "duration"], ["s", "unit"], ["^", "operator"], ["2", "repeat"],
+  ])
+  const [m] = JSON.parse(lang.diagnostics("2026-11-07\n- Plank bw 12 60s\n"))
+  assert.equal(m.severity, "error")
+  assert.equal("- Plank bw 12 60s".slice(m.from, m.to), "60s")
+  const c = JSON.parse(lang.completions(text + "2026-11-08\n- Pl", 3, 4))
+  assert.equal(c[0].insert, "Plank bw 60s^2")
+})
+
 test("unfinished_date", () => {
   assert.equal(lang.unfinished_date("2026-11-0\n"), true)
   assert.equal(lang.unfinished_date("07/11/2026\n- Row 12x40kg\n"), true)

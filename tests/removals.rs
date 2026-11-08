@@ -158,11 +158,11 @@ fn empty_session_removed() {
 fn a_line_the_parser_cannot_read_is_protected_too() {
     // found by the web app's integration test: this line was dropped by a
     // stale save without the removal question
-    let device = "2026-11-07\n- Row 12x20kg\n- Plank BW 60s^2\n";
+    let device = "2026-11-07\n- Row 12x20kg\n- Pec Fly 39kg\n";
     let merged = "2026-11-07\n- Row 12x20kg\n";
     let r = removals(device, merged);
     assert_eq!(r.len(), 1, "{r:?}");
-    assert_eq!(r[0].to_string(), "removes the line `- Plank BW 60s^2` from 2026-11-07");
+    assert_eq!(r[0].to_string(), "removes the line `- Pec Fly 39kg` from 2026-11-07");
 }
 
 #[test]
@@ -183,14 +183,14 @@ fn times_labels_and_comments_are_protected() {
 
 #[test]
 fn an_unreadable_line_kept_as_a_conflict_comment_is_not_removed() {
-    let device = "2026-11-07\n- Plank BW 60s^2\n";
-    let merged = "2026-11-07\n- Plank BW 45s\n; conflict 2026-11-07 phone: - Plank BW 60s^2\n";
+    let device = "2026-11-07\n- Pec Fly 39kg\n";
+    let merged = "2026-11-07\n- Pec Fly 12x39kg\n; conflict 2026-11-07 phone: - Pec Fly 39kg\n";
     assert!(removals(device, merged).iter().all(|r| !matches!(r, Removal::Line { .. })), "{:?}", removals(device, merged));
 }
 
 #[test]
 fn a_whole_removed_session_is_reported_once() {
-    let device = "2026-11-06\n- Row 12x20kg\n2026-11-07\n18h00~19h00\n- Plank BW 60s^2\n";
+    let device = "2026-11-06\n- Row 12x20kg\n2026-11-07\n18h00~19h00\n- Pec Fly 39kg\n";
     let merged = "2026-11-06\n- Row 12x20kg\n";
     let r = removals(device, merged);
     assert_eq!(r.len(), 1, "{r:?}");
@@ -203,4 +203,46 @@ fn repeated_lines_count_each_time() {
     let merged = "2026-11-07\n; note\n";
     assert_eq!(removals(device, merged).len(), 1);
     assert!(removals(device, device).is_empty());
+}
+
+// ---------- timed sets ----------
+
+#[test]
+fn a_shorter_hold_is_a_removal() {
+    let device = "2026-11-07\n- Plank bw 60s^2\n";
+    let merged = "2026-11-07\n- Plank bw 60s 45s\n";
+    let r = removals(device, merged);
+    assert_eq!(
+        r,
+        vec![Removal::Hold { date: s("2026-11-07"), name: s("Plank"), set: 2, before_seconds: 60, after_seconds: 45 }]
+    );
+    assert_eq!(r[0].to_string(), "reduces set 2 of Plank on 2026-11-07 from 1 min to 45 s");
+    assert!(removals(merged, device).is_empty(), "a longer hold is not a removal");
+}
+
+#[test]
+fn a_lost_timed_set_is_a_removal_of_sets() {
+    let device = "2026-11-07\n- Plank bw 60s^2\n";
+    let merged = "2026-11-07\n- Plank bw 60s\n";
+    let r = removals(device, merged);
+    assert_eq!(r, vec![Removal::Sets { date: s("2026-11-07"), name: s("Plank"), before: 2, after: 1 }]);
+    assert_eq!(r[0].to_string(), "removes 1 set of Plank on 2026-11-07 (2 to 1)");
+}
+
+#[test]
+fn a_timed_line_is_counted_structurally() {
+    // `- Plank bw 60s^2` parses now, so it is no longer a bare `Line`
+    let device = "2026-11-07\n- Row 12x20kg\n- Plank bw 60s^2\n- Farmer Walk 30kg 40s^3\n";
+    let merged = "2026-11-07\n- Row 12x20kg\n";
+    let r = removals(device, merged);
+    assert_eq!(
+        r,
+        vec![
+            Removal::Exercise { date: s("2026-11-07"), name: s("Farmer Walk"), sets: 3 },
+            Removal::Exercise { date: s("2026-11-07"), name: s("Plank"), sets: 2 },
+        ]
+    );
+    // a heavier or longer timed set, or one changed to reps, is an edit
+    assert!(removals("2026-11-07\n- Farmer Walk 30kg 40s\n", "2026-11-07\n- Farmer Walk 40kg 50s\n").is_empty());
+    assert!(removals("2026-11-07\n- Plank bw 60s\n", "2026-11-07\n- Plank bw 12\n").is_empty());
 }
