@@ -131,3 +131,15 @@ plain `vim.api.nvim_set_hl(0, 'WorkoutExercise', {...})` also works, but
 `:colorscheme` clears it, so put it in your own `ColorScheme` autocommand.
 
 To check what applies under the cursor: `:Inspect`.
+
+## Files
+
+| File | Purpose |
+|---|---|
+| `README.md` | This file: install, options, highlight groups. |
+| [`lua/workout/init.lua`](lua/workout/README.md) | The whole plugin: file matching, starting `workout-lsp`, and the highlight groups. Loaded by `require('workout')`. |
+
+The token kinds in `init.lua` (`M.kinds`) follow `TokenKind::ALL` in
+`src/tokens.rs`, and the semantic token types follow the legend in
+`src/lsp/analysis.rs`. The plugin needs `workout-lsp` from
+`src/bin/workout-lsp.rs` on the `PATH` (or set `cmd`).

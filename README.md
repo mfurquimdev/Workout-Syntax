@@ -25,6 +25,33 @@ if let Ok(Line::Exercise(ex)) = parse_line("- Bench Press +22kg x2 15x0kg 12x5kg
 }
 ```
 
+## Layout
+
+Each directory has a README that lists its files and how they relate.
+
+| Directory | Contents |
+|---|---|
+| [`src/`](src/README.md) | The library: grammar, parser, documents, expansion, tokens, merge, removals, sync and HTTP server |
+| [`src/bin/`](src/bin/README.md) | `workout-lint`, `workout-lsp`, `workout-server` |
+| [`src/lsp/`](src/lsp/README.md) | Editor features (`analysis.rs`) and the server loop (`server.rs`) |
+| [`tests/`](tests/README.md) | Integration tests, and which module each covers |
+| [`tests/fixtures/`](tests/fixtures/README.md) | The fixture log and recorded body types |
+| [`tla/`](tla/README.md) | TLA+ specs, their TLC configs and `check.sh` |
+| [`wasm/`](wasm/README.md) | The `workout_wasm` crate and its build script |
+| [`wasm/src/`](wasm/src/README.md) | The wasm-bindgen exports |
+| [`wasm/tests/`](wasm/tests/README.md) | Tests of the adapter: native, Node and browser |
+| [`wasm/tests/js/`](wasm/tests/js/README.md) | Node tests of the built module |
+| [`wasm/tests/browser/`](wasm/tests/browser/README.md) | Chromium smoke test |
+| [`editors/`](editors/README.md) | Editor integrations |
+| [`editors/nvim/`](editors/nvim/README.md) | The Neovim plugin |
+| [`editors/nvim/lua/workout/`](editors/nvim/lua/workout/README.md) | The plugin's Lua module |
+
+At the crate root, `build.rs` copies the live log (`Workout.md`, or the
+file in `WORKOUT_LOG`) to `$OUT_DIR/live.md` for the tests, or
+`tests/fixtures/Workout.md` when there is no live log. It sets
+`cfg(live_log)` when the live log exists. `Workout.md`, `target/` and
+`wasm/pkg/` are git-ignored.
+
 ## Language server
 
 ```sh
