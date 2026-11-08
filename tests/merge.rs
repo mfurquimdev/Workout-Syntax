@@ -71,11 +71,11 @@ fn table_one_removed_other_changed_keeps_change() {
     let b = "2026-01-01\n- A 1x1kg\n2026-01-02\n- B 1x1kg\n";
     // server removed 01-02, device changed it
     let r = m(b, "2026-01-01\n- A 1x1kg\n", "2026-01-01\n- A 1x1kg\n2026-01-02\n- B 1x1kg\n- C 1x1kg\n");
-    assert_eq!(r.text, "2026-01-01\n- A 1x1kg\n2026-01-02\n- B 1x1kg\n- C 1x1kg\n");
+    assert_eq!(r.text, "2026-01-01\n- A 1x1kg\n\n2026-01-02\n- B 1x1kg\n- C 1x1kg\n");
     assert_eq!(r.notices, vec![added("2026-01-02", Side::Device)]);
     // device removed 01-02, server changed it
     let r = m(b, "2026-01-01\n- A 1x1kg\n2026-01-02\n- B 2x1kg\n", "2026-01-01\n- A 1x1kg\n");
-    assert_eq!(r.text, "2026-01-01\n- A 1x1kg\n2026-01-02\n- B 2x1kg\n");
+    assert_eq!(r.text, "2026-01-01\n- A 1x1kg\n\n2026-01-02\n- B 2x1kg\n");
     assert_eq!(r.notices, vec![added("2026-01-02", Side::Server)]);
 }
 
@@ -89,7 +89,7 @@ fn no_final_newline() {
         "2026-01-01\n- A 1x1kg\n2026-01-02\n- B 1x1kg",
     );
     // the prototype adds a final newline; this merge keeps the inputs' choice
-    assert_eq!(r.text, "2026-01-01\n- A 1x1kg\n2026-01-02\n- B 1x1kg\n2026-01-03\n- C 1x1kg");
+    assert_eq!(r.text, "2026-01-01\n- A 1x1kg\n\n2026-01-02\n- B 1x1kg\n\n2026-01-03\n- C 1x1kg");
     assert_eq!(r.notices, vec![added("2026-01-02", Side::Device), added("2026-01-03", Side::Server)]);
 }
 
@@ -102,7 +102,7 @@ fn a_session_never_joins_a_line_without_newline() {
         "2026-01-01\n- A 1x1kg\n2026-01-03\n- C 1x1kg\n",
         "2026-01-01\n- A 1x1kg\n2026-01-02\n- B 1x1kg",
     );
-    assert_eq!(r, "2026-01-01\n- A 1x1kg\n2026-01-02\n- B 1x1kg\n2026-01-03\n- C 1x1kg");
+    assert_eq!(r, "2026-01-01\n- A 1x1kg\n\n2026-01-02\n- B 1x1kg\n\n2026-01-03\n- C 1x1kg");
 }
 
 #[test]
@@ -112,14 +112,14 @@ fn both_add_today() {
         "2026-01-01\n- A 1x1kg\n2026-01-02\n- Cardio 1km\n",
         "2026-01-01\n- A 1x1kg\n2026-01-02\n- Bench 12x40kg\n- Row 12x20kg\n",
     );
-    assert_eq!(r.text, "2026-01-01\n- A 1x1kg\n2026-01-02\n- Cardio 1km\n- Bench 12x40kg\n- Row 12x20kg\n");
+    assert_eq!(r.text, "2026-01-01\n- A 1x1kg\n\n2026-01-02\n- Cardio 1km\n- Bench 12x40kg\n- Row 12x20kg\n");
     assert!(r.notices.is_empty(), "{:?}", r.notices);
 }
 
 #[test]
 fn year_fix_vs_phone_add() {
     let r = m("2025-01-01\n- A 1x1kg\n", "2026-01-01\n- A 1x1kg\n", "2025-01-01\n- A 1x1kg\n- B 1x1kg\n");
-    assert_eq!(r.text, "2025-01-01\n- A 1x1kg\n- B 1x1kg\n2026-01-01\n- A 1x1kg\n");
+    assert_eq!(r.text, "2025-01-01\n- A 1x1kg\n- B 1x1kg\n\n2026-01-01\n- A 1x1kg\n");
     assert_eq!(
         r.notices,
         vec![
@@ -133,7 +133,7 @@ fn year_fix_vs_phone_add() {
 #[test]
 fn year_fix_on_phone_vs_desktop_add() {
     let r = m("2025-01-01\n- A 1x1kg\n", "[[2025-01-01]]\n- A 1x1kg\n- B 1x1kg\n", "[[2026-01-01]]\n- A 1x1kg\n");
-    assert_eq!(r.text, "[[2025-01-01]]\n- A 1x1kg\n- B 1x1kg\n[[2026-01-01]]\n- A 1x1kg\n");
+    assert_eq!(r.text, "[[2025-01-01]]\n- A 1x1kg\n- B 1x1kg\n\n[[2026-01-01]]\n- A 1x1kg\n");
     assert!(r.notices.contains(&Notice::SameBodyTwoDates {
         from: "2025-01-01".into(),
         to: "2026-01-01".into(),
@@ -150,7 +150,7 @@ fn same_exercise_other_numbers() {
     );
     assert_eq!(
         r,
-        "2026-01-01\n- A 1x1kg\n2026-01-02\n- Bench 12x40kg\n- Row 12x20kg\n; conflict 2026-01-02 phone: - Bench 12x45kg\n"
+        "2026-01-01\n- A 1x1kg\n\n2026-01-02\n- Bench 12x40kg\n- Row 12x20kg\n; conflict 2026-01-02 phone: - Bench 12x45kg\n"
     );
 }
 
@@ -188,7 +188,7 @@ fn half_typed_date_joins_the_previous_session() {
         "2026-01-01\n- A 1x1kg\n2026-01-02\n- B 2x1kg\n",
         "2026-01-01\n- A 1x1kg\n2026-01-0\n- B 1x1kg\n",
     );
-    assert_eq!(r, "2026-01-01\n- A 1x1kg\n2026-01-0\n- B 1x1kg\n2026-01-02\n- B 2x1kg\n");
+    assert_eq!(r, "2026-01-01\n- A 1x1kg\n2026-01-0\n- B 1x1kg\n\n2026-01-02\n- B 2x1kg\n");
 }
 
 // ---------- the real logs ----------
@@ -213,11 +213,13 @@ fn live_log_is_kept_byte_for_byte() {
 fn identical_out_of_order_inputs_are_sorted() {
     // the fixture has 2025 typos between 2026 sessions
     let r = m(FIXTURE, FIXTURE, FIXTURE);
-    let mut a: Vec<&str> = r.text.lines().collect();
-    let mut b: Vec<&str> = FIXTURE.lines().collect();
+    // the same lines, though a moved session may gain a blank line
+    let mut a: Vec<&str> = r.text.lines().filter(|l| !l.trim().is_empty()).collect();
+    let mut b: Vec<&str> = FIXTURE.lines().filter(|l| !l.trim().is_empty()).collect();
     a.sort();
     b.sort();
     assert_eq!(a, b, "same lines");
+    assert!(r.text.lines().count() >= FIXTURE.lines().count());
     assert!(r.notices.iter().all(|n| matches!(n, Notice::Moved { .. })));
     assert_eq!(r.notices.len(), 3, "{:?}", r.notices);
     assert_eq!(text(&r.text, &r.text, &r.text), r.text);
@@ -289,7 +291,7 @@ fn differing_date_lines_never_make_a_second_date() {
     let r = text(b, s, d);
     assert_eq!(
         r,
-        "2026-01-01\n- A 1x1kg\n[[2026-01-02]]\n- B 1x1kg\n- C 1x1kg\n; conflict 2026-01-02 phone: 2026-01-02 82.5kg\n"
+        "2026-01-01\n- A 1x1kg\n\n[[2026-01-02]]\n- B 1x1kg\n- C 1x1kg\n; conflict 2026-01-02 phone: 2026-01-02 82.5kg\n"
     );
     assert_eq!(text(b, &r, d), r);
 }
@@ -318,7 +320,7 @@ fn sessions_are_moved_into_date_order() {
     let b = "2026-01-01\n- A 1x1kg\n\n2026-01-05\n- E 1x1kg\n";
     let d = "2026-01-01\n- A 1x1kg\n\n2026-01-05\n- E 1x1kg\n\n2026-01-03\n- C 1x1kg\n";
     let r = m(b, b, d);
-    assert_eq!(r.text, "2026-01-01\n- A 1x1kg\n\n2026-01-03\n- C 1x1kg\n2026-01-05\n- E 1x1kg\n\n");
+    assert_eq!(r.text, "2026-01-01\n- A 1x1kg\n\n2026-01-03\n- C 1x1kg\n\n2026-01-05\n- E 1x1kg\n\n");
     assert_eq!(r.notices, vec![added("2026-01-03", Side::Device), Notice::Moved { date: "2026-01-03".into() }]);
 }
 
@@ -379,4 +381,73 @@ fn empty_inputs() {
 fn notices_render_as_sentences() {
     let n = Notice::Added { date: "2026-10-29".into(), from: Side::Server };
     assert_eq!(n.to_string(), "Session 2026-10-29 added from the server");
+}
+
+// ---------- a blank line between sessions ----------
+
+/// The owner's live log has sessions with no blank line before them.
+const JOINED: &str = "2026-01-01\n- A 1x1kg\n2026-01-02\n18h00~19h00\n- B 1x1kg\n2026-01-03\n- C 1x1kg\n";
+
+#[test]
+fn a_log_without_blank_lines_comes_back_byte_for_byte() {
+    let r = m(JOINED, JOINED, JOINED);
+    assert_eq!(r.text, JOINED);
+    assert!(r.notices.is_empty());
+    // changes inside sessions do not reformat any other session either
+    let s = JOINED.replace("- A 1x1kg", "- A 2x1kg");
+    let d = JOINED.replace("- C 1x1kg", "- C 1x1kg\n- D 1x1kg");
+    assert_eq!(text(JOINED, &s, &d), JOINED.replace("- A 1x1kg", "- A 2x1kg").replace("- C 1x1kg", "- C 1x1kg\n- D 1x1kg"));
+    // nor does a removal
+    let d = JOINED.replace("2026-01-02\n18h00~19h00\n- B 1x1kg\n", "");
+    assert_eq!(text(JOINED, JOINED, &d), d);
+}
+
+#[test]
+fn a_device_session_after_one_without_a_blank_line_gets_one() {
+    let d = format!("{JOINED}2026-01-04\n- D 1x1kg\n");
+    let r = m(JOINED, JOINED, &d);
+    assert_eq!(r.text, format!("{JOINED}\n2026-01-04\n- D 1x1kg\n"));
+    assert_eq!(r.notices, vec![added("2026-01-04", Side::Device)]);
+    // in the middle: a blank line before and after it, the rest as written
+    let b = "2026-01-01\n- A 1x1kg\n2026-01-03\n- C 1x1kg\n";
+    let d = "2026-01-01\n- A 1x1kg\n2026-01-02\n- B 1x1kg\n2026-01-03\n- C 1x1kg\n";
+    assert_eq!(text(b, b, d), "2026-01-01\n- A 1x1kg\n\n2026-01-02\n- B 1x1kg\n\n2026-01-03\n- C 1x1kg\n");
+    // the merge is repeat-safe
+    let r = text(b, b, d);
+    assert_eq!(text(b, &r, d), r);
+    assert_eq!(text(&r, &r, &r), r);
+}
+
+#[test]
+fn a_server_session_gets_a_blank_line_too() {
+    let s = format!("{JOINED}2026-01-04\n- D 1x1kg\n");
+    let d = JOINED.replace("- B 1x1kg", "- B 2x1kg");
+    let r = m(JOINED, &s, &d);
+    assert_eq!(r.text, format!("{}\n2026-01-04\n- D 1x1kg\n", JOINED.replace("- B 1x1kg", "- B 2x1kg")));
+    assert_eq!(r.notices, vec![added("2026-01-04", Side::Server)]);
+}
+
+#[test]
+fn a_moved_session_is_set_apart() {
+    let b = "2026-01-01\n- A 1x1kg\n2026-01-05\n- E 1x1kg\n";
+    let d = "2026-01-01\n- A 1x1kg\n2026-01-05\n- E 1x1kg\n2026-01-03\n- C 1x1kg\n";
+    let r = m(b, b, d);
+    assert_eq!(r.text, "2026-01-01\n- A 1x1kg\n\n2026-01-03\n- C 1x1kg\n\n2026-01-05\n- E 1x1kg\n");
+    assert!(r.notices.contains(&Notice::Moved { date: "2026-01-03".into() }));
+    // out of order in every input: moved, and set apart from both neighbours;
+    // the sessions it left keep the separator they had
+    let all = "2026-01-01\n- A 1x1kg\n2026-01-04\n- D 1x1kg\n2026-01-02\n- B 1x1kg\n2026-01-05\n- E 1x1kg\n";
+    let r = m(all, all, all);
+    assert_eq!(r.notices, vec![Notice::Moved { date: "2026-01-04".into() }]);
+    assert_eq!(r.text, "2026-01-01\n- A 1x1kg\n\n2026-01-02\n- B 1x1kg\n\n2026-01-04\n- D 1x1kg\n\n2026-01-05\n- E 1x1kg\n");
+    assert_eq!(text(&r.text, &r.text, &r.text), r.text);
+}
+
+#[test]
+fn a_preamble_before_an_added_session_is_set_apart() {
+    let b = "# Workout\n";
+    let d = "# Workout\n2026-01-01\n- A 1x1kg\n";
+    assert_eq!(text(b, b, d), "# Workout\n\n2026-01-01\n- A 1x1kg\n");
+    // a preamble nobody changed keeps its place next to a session nobody changed
+    assert_eq!(text(d, d, d), d);
 }

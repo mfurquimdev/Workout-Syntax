@@ -50,7 +50,17 @@ impl Diagnostic {
             || (self.severity == Severity::Warning && self.message.starts_with(dates::OTHER_FORMAT))
             || (self.severity == Severity::Error && self.message.contains(dates::NOT_A_REAL_DATE))
     }
+
+    /// A warning that a session starts right after a non-blank line; its
+    /// message starts with [`NO_BLANK_LINE_BEFORE_SESSION`].
+    pub fn is_missing_blank_line(&self) -> bool {
+        self.severity == Severity::Warning && self.message.starts_with(NO_BLANK_LINE_BEFORE_SESSION)
+    }
 }
+
+/// How the warning on a session that follows another line directly
+/// starts: `a session starts after an empty line: add one before 2026-10-29`.
+pub const NO_BLANK_LINE_BEFORE_SESSION: &str = "a session starts after an empty line";
 
 /// A one-line edit: replace `columns` (0-based characters, `[start, end)`,
 /// empty to insert) with `text`.
@@ -239,9 +249,14 @@ pub fn parse_document(src: &str) -> Document {
     // after a date line that starts no session, until the next good date
     let mut orphaned = false;
     let mut diags = Diags { lines: src.lines().collect(), list: Vec::new() };
+    // a non-blank line came before this one
+    let mut seen_text = false;
 
     for (idx, text) in src.lines().enumerate() {
         let n = idx + 1;
+        // the line before is not blank, and is not the start of the file
+        let follows_text = seen_text && !diags.lines[idx - 1].trim().is_empty();
+        seen_text |= !text.trim().is_empty();
         let parsed = parse_line_with_warnings(text);
         // Whether a session starts here is decided by `session::date_line`
         // alone, the rule the merge uses too; the parser only adds what it
@@ -263,6 +278,12 @@ pub fn parse_document(src: &str) -> Document {
             open = None;
             orphaned = false;
             let date = start.date.to_string();
+            if follows_text {
+                // a session is separated from what comes before by a blank line
+                let message = format!("{NO_BLANK_LINE_BEFORE_SESSION}: add one before {date}");
+                let fix = Fix { title: format!("Add an empty line before {date}"), columns: (0, 0), text: "\n".into() };
+                diags.with_fix(n, content_columns(text), Severity::Warning, message, fix);
+            }
             if let Some(prev) = doc.sessions.last().filter(|p| date < p.date) {
                 let msg = format!("date {date} is earlier than the previous session {}", prev.date);
                 diags.line(n, Severity::Warning, msg);

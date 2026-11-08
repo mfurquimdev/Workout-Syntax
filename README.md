@@ -36,7 +36,9 @@ volume; on a date, the session summary), completion of exercise names
 from your own history (accepting inserts the last prescription), outline
 of sessions › super sets › exercises, folding per session, and inlay hints
 with reps · volume at the end of each strength line, and quick fixes
-that lowercase units and `x` (`Kg` → `kg`, `X2` → `x2`), and semantic
+that lowercase units and `x` (`Kg` → `kg`, `X2` → `x2`) or add the empty
+line a session must start after (one session, or every session at once:
+"Add an empty line before every session"), and semantic
 tokens (full and range) for highlighting, one type per token kind.
 
 The server attaches to whatever file your editor hands it; the examples
@@ -76,6 +78,8 @@ cargo run --bin workout-server -- --log copy/Workout.md --app ../app/.dist \
   - `409 {status: "wait", reason}` while a date line is unfinished
   - `{status: "error", message}`: an old protocol (409), an empty log (400),
     the file looking mid-save (503)
+- A session the merge adds or moves is set apart from its neighbours by an
+  empty line; sessions nobody touched are left as written.
 - Every change is committed to the log's git repository, and outside edits
   (Neovim) are committed before merging. The log is never created.
 - Requests must name an allowed `Host`, and an `Origin` must match it. No

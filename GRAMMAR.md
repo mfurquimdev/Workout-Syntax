@@ -270,6 +270,21 @@ of its first member. A blank line, a date, another label or a bullet change
 closes it. With `+` members the group is unambiguous; with `-` members it
 runs to the next blank line/date/label, so the parser warns.
 
+**Sessions are separated by an empty line.** A line that starts a session
+(by the rule in `src/session.rs`, which the merge uses too) must follow an
+empty or whitespace-only line, unless it is the first non-blank line of the
+file. After the last exercise of a session comes an empty line; only then
+another session. A session that follows another line directly still
+starts there, with a warning (section 7). Lines that start no session (a
+half-typed, impossible or non-ISO date) are not checked.
+
+The sync merge keeps this rule for what it writes: when it adds a session
+to one side, moves one into date order, or puts two sessions next to each
+other that were not neighbours before, and the first has no empty line
+after it, it writes one between them. Sessions neither side touched keep
+their separators as written, so a log without empty lines that nobody
+changed comes back byte for byte. It never changes bytes inside a line.
+
 **Number limits.** Every number is checked against its limit before it is
 converted, so a line of any length parses without overflow. The limit
 itself is allowed; anything above it (even `9999.5`) is a parse error whose
@@ -297,9 +312,20 @@ Errors: any line the grammar rejects (with column; a load with no reps
 says so, section 4), numbers over their
 limits (section 6), R1/R2 violations, lines with too many sets, and a date
 or a time of day that does not exist.
-Warnings: a date earlier than the previous session, a half-typed date, a date
+Warnings: a date earlier than the previous session, a session with no empty
+line before it, a half-typed date, a date
 in another format, an exercise with nothing recorded, a cardio line with no
 distance, a super set using `-` bullets.
+
+A session with no empty line before it gets a warning on its date line
+with a quick fix, `Add an empty line before 2026-10-29`, that inserts a
+newline at the start of the date line. The language server also offers one
+action, `Add an empty line before every session`, that inserts every
+missing empty line in one edit; it has kind `quickfix` (so editors list it
+beside the one-line fix, where a `source.fixAll` action would only run on
+request or on save) and is offered for any range while the document has
+such a warning. The WebAssembly module reports the warning and its
+one-line fix in `diagnostics`; it has no fix-all export.
 
 | Line | Severity | Message |
 |---|---|---|
@@ -307,6 +333,7 @@ distance, a super set using `-` bullets.
 | `2026-13-01` | error | `2026-13-01 is not a real date: months go from 01 to 12` |
 | `- Pec Fly 39kg` | error | `39kg has no reps: write 12x39kg or 39kg 12` |
 | `25h70~19h15` | error | `25h70 is not a real time of day: hours go from 0 to 23 and minutes from 00 to 59` |
+| `2026-10-29` right after `- Row 12x20kg` | warning | `a session starts after an empty line: add one before 2026-10-29` |
 | `2026-11-0` | warning | `date is incomplete: write yyyy-mm-dd` |
 | `[[2026-11-07` | warning | `date is incomplete: write [[yyyy-mm-dd]]` |
 | `07/11/2026` | warning | `dates are written yyyy-mm-dd: did you mean 2026-11-07? please correct the date` |

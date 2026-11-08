@@ -75,6 +75,22 @@ test("diagnostics", () => {
   assert.equal("- 💪 Pec Fly".slice(e.from, e.to), "💪")
 })
 
+test("a session after a non-empty line gets a fix inserting an empty line", () => {
+  const text = "2026-11-06\n- Row 12x20kg\n2026-11-07\n- Row 12x25kg\n"
+  const d = JSON.parse(lang.diagnostics(text))
+  assert.deepEqual(d, [{
+    line: 2, from: 0, to: 10, severity: "warning",
+    message: "a session starts after an empty line: add one before 2026-11-07",
+    fix: { title: "Add an empty line before 2026-11-07", from: 0, to: 0, text: "\n" },
+  }])
+  const lines = text.split("\n")
+  const l = lines[d[0].line]
+  lines[d[0].line] = l.slice(0, d[0].fix.from) + d[0].fix.text + l.slice(d[0].fix.to)
+  const fixed = lines.join("\n")
+  assert.equal(fixed, "2026-11-06\n- Row 12x20kg\n\n2026-11-07\n- Row 12x25kg\n")
+  assert.deepEqual(JSON.parse(lang.diagnostics(fixed)), [])
+})
+
 test("diagnostics of the whole fixture", () => {
   const d = JSON.parse(lang.diagnostics(LOG))
   assert.ok(d.length > 10)
