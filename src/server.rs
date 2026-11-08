@@ -187,6 +187,8 @@ fn content_type(path: &Path) -> &'static str {
         "css" => "text/css; charset=utf-8",
         "json" | "webmanifest" => "application/json; charset=utf-8",
         "wasm" => "application/wasm",
+        "woff2" => "font/woff2",
+        "woff" => "font/woff",
         "svg" => "image/svg+xml",
         "png" => "image/png",
         "ico" => "image/x-icon",
