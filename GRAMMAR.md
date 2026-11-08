@@ -170,10 +170,16 @@ body         = cardio | strength ;
 strength     = default-load , [ sp , sides ] , sp , set-list
              | set-list ;
 set-list     = set-item , { sp , set-item } ;
-set-item     = explicit-set | bare-set ;
+set-item     = explicit-set | explicit-hold | hold-set | bare-set ;
 explicit-set = ( reps , by , ( bodyweight | mass ) | mass , by , reps ) , [ repeat ] ;
                                               (* 12x63kg  39kgx12  12x63kg^2 *)
 bare-set     = reps , [ repeat ] ;            (* 12  12^3  12/11 *)
+explicit-hold = ( hold , by , ( bodyweight | mass ) | mass , by , hold ) , [ repeat ] ;
+                                              (* 60sx20kg  20kgx1m30s^2 *)
+hold-set     = hold , [ repeat ] ;            (* 60s  60s^2 *)
+hold         = count , colon , count          (* 1:30 *)
+             | count , min-unit , [ count , sec-unit ]   (* 1min 1m30s *)
+             | count , sec-unit ;             (* 60s 45sec *)
 reps         = count , side-sep , count       (* left / right *)
              | count ;
 repeat       = repeat-op , count ;
@@ -193,6 +199,59 @@ says what is missing, with the span on the load:
 An initial weight alone (`- Bench Press +22kg`) is not a load lifted but
 the bar, so the line parses and the document warns that it has nothing
 recorded, as for a bare name.
+
+### Timed sets
+
+A set can be a hold time instead of reps: `- Plank bw 60s^2` means the
+plank was held at body weight for 60 seconds, twice. A hold uses the cardio
+duration forms with no speed: `60s`, `45sec`, `1min`, `1m30s`, `1:30`, units
+in lowercase (uppercase parses with the usual warning and quick fix).
+
+| Line | Sets |
+|---|---|
+| `- Plank bw 60s^2` | 2 × 1 min at bw |
+| `- Plank bw 60s 45s 30s` | 1 min, 45 s, 30 s at bw |
+| `- Farmer Walk 30kg 40s^3` | 3 × 40 s at 30 kg |
+| `- Farmer Walk x2 24kg 40s` | 40 s at 48 kg (per side, as for reps) |
+| `- Dead Hang 60sx20kg 20kgx45s` | explicit loads, like `12x20kg` / `20kgx12` |
+| `- Farmer Walk 20kg++5kg 30s^3` | 30 s at 20, 25, 30 kg |
+| `- Plank 60s^2` | 2 × 1 min; no load written means body weight |
+
+`bw` is the norm in the log; a bare hold with no load at all is held at
+body weight (it is not an R1 error, unlike bare reps). Rule R2 applies to
+holds too: `- Hang 60sx20kg 45s` is an error (*set 2 has a time only, but an
+earlier set gave an explicit weight…*).
+
+**Cardio or timed.** The body is read as cardio first, and stays cardio
+when the whole body is cardio metrics (distances, durations with or without
+a speed, ranges). Otherwise it is a strength body, where durations are
+holds. So holds are timed sets when the line has a load or `bw`
+(`bw 60s`, `30kg 40s`), a repeat on a hold (`60s^2`, `60s 45s*2`), or an
+explicit load (`60sx20kg`). Durations alone stay cardio exactly as before:
+`- Bike 20min`, `- Treadmill 11:26`, `- Treadmill 5min 20min` and also
+`- Plank 60s 45s 30s` (with the several-durations error) or `- Plank 60s`
+(with the no-distance warning). When such a cardio line has only durations
+in seconds (`60s`, `45sec`), both messages suggest the timed form:
+*… for timed sets, write the load first, such as `bw 60s 45s 30s`; for
+cardio, keep one and correct the line* and *no distance; for a timed set,
+write the load first, such as `bw 60s`*. Every line of the fixture log
+parses to the same body as before (`tests/body_types.rs`).
+
+**One kind per line.** A line has reps or timed sets, not both:
+`- Plank bw 12 60s` is an error on `60s`: *`60s` is a timed set, but the
+sets before it are reps: a line has reps or timed sets, not both, so write
+them on two lines* (and *`12` is reps, but the sets before it are timed…*
+the other way round).
+
+**A hold lasts more than 0**: `- Plank bw 0s` is an error, *a timed set of
+0s holds for no time: a hold lasts at least 1s*.
+
+**Totals.** A timed set counts as a set and adds to the time held, not to
+reps or volume. Hover shows a `Hold` column (`| 1 | 1 min | bw | bw |`) and
+`2 sets · 2 min held`; a session totals `… · 24 reps · 4 min 10 s held · 480
+kg volume`; the inlay hint is `2 min held`. The removal check compares holds
+like reps: a lost timed set is *removes 1 set of Plank on 2026-11-07 (2 to
+1)*, a shorter one *reduces set 2 of Plank on 2026-11-07 from 1 min to 45 s*.
 
 ## 5. Cardio body
 
@@ -254,6 +313,9 @@ No fix is offered when the result rounds to 0 or exceeds 9999 km.
 | R3 | With `base++step`, the *n*-th bare set (from 0) uses `base + n·step`; every repeated set counts. |
 | R4 | `^n` / `*n` emits exactly *n* sets, in order. |
 
+Timed sets follow the same rules, except that a bare hold with no default
+load is at body weight (section 4, *Timed sets*).
+
 **Total load** of a set = `initial + sides × written load`. So
 `Bench Press +22kg x2 12x5kg` is 12×32kg.
 
@@ -298,7 +360,8 @@ span covers the number.
 | body weight on a date line, in the unit written (grams over 9999 get a fix to kg) | 9999 | `a body weight of 9999.5kg is over the limit of 9999kg` |
 | distance | 9999 | `a distance of 10000km is over the limit of 9999km` |
 | speed | 9999 | `a speed of 10000km/h is over the limit of 9999km/h` |
-| duration minutes / seconds (`20min`, `14m28s`, `11:26`) | 9999 | `10000 minutes is over the limit of 9999` |
+| duration minutes / seconds (`20min`, `14m28s`, `11:26`), in cardio and in holds (`60s`) | 9999 | `10000 minutes is over the limit of 9999` |
+| a hold's total time | above 0 | `a timed set of 0s holds for no time: a hold lasts at least 1s` |
 | range ends (`4.5~15⁰`) | 9999 | `10000 in a range is over the limit of 9999` |
 | sets one line expands to | 9999 | `this line expands to 10098 sets, over the limit of 9999` |
 
@@ -310,7 +373,7 @@ of `^99`. Dates and times of day are not covered here.
 
 Errors: any line the grammar rejects (with column; a load with no reps
 says so, section 4), numbers over their
-limits (section 6), R1/R2 violations, lines with too many sets, and a date
+limits (section 6), reps and timed sets on one line, a hold of 0, R1/R2 violations, lines with too many sets, and a date
 or a time of day that does not exist.
 Warnings: a date earlier than the previous session, a session with no empty
 line before it, a half-typed date, a date
@@ -378,7 +441,7 @@ logs and by fuzzing in `tests/tokens.rs`).
 | `unit` | `kg lb lbs km mi min m sec s km/h kph mph g oz ⁰ ° º %`, any case, or a typed prefix |
 | `bw` | the `bw` keyword (any case) |
 | `operator` | `x ^ * ++ + - / : ~ @ _` acting as syntax |
-| `distance` / `duration` / `speed` / `range` | numbers of cardio metrics |
+| `distance` / `duration` / `speed` / `range` | numbers of cardio metrics; `duration` also covers the hold time of a timed set (`60` in `bw 60s^2`) |
 | `comment` | `;` to end of line |
 | `conflict` | a `; conflict YYYY-MM-DD <device>: <line>` line, except the date |
 | `conflict_date` | the date of a conflict line |

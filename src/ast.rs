@@ -122,6 +122,59 @@ impl fmt::Display for Reps {
     }
 }
 
+/// What one set did: repetitions, or a hold for a time (a timed set,
+/// `60s` in `- Plank bw 60s^2`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Effort {
+    /// `12`, `12/11`
+    Reps(Reps),
+    /// `60s`, `1m30s`, `1:30`: held for `seconds` (above 0)
+    Hold { seconds: u32 },
+}
+
+impl Effort {
+    /// The repetitions; 0 for a hold.
+    pub fn reps(self) -> u32 {
+        match self {
+            Effort::Reps(r) => r.total(),
+            Effort::Hold { .. } => 0,
+        }
+    }
+    /// The hold time in seconds; `None` for repetitions.
+    pub fn hold_seconds(self) -> Option<u32> {
+        match self {
+            Effort::Hold { seconds } => Some(seconds),
+            Effort::Reps(_) => None,
+        }
+    }
+    pub fn is_hold(self) -> bool {
+        matches!(self, Effort::Hold { .. })
+    }
+}
+
+impl fmt::Display for Effort {
+    /// `12`, `12/11`, `45s`, `1min`, `1m30s`
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Effort::Reps(r) => write!(f, "{r}"),
+            Effort::Hold { seconds } => match (seconds / 60, seconds % 60) {
+                (0, s) => write!(f, "{s}s"),
+                (m, 0) => write!(f, "{m}min"),
+                (m, s) => write!(f, "{m}m{s}s"),
+            },
+        }
+    }
+}
+
+/// `45 s`, `1 min`, `1 min 30 s`: a time for people to read.
+pub fn describe_seconds(seconds: u32) -> String {
+    match (seconds / 60, seconds % 60) {
+        (0, s) => format!("{s} s"),
+        (m, 0) => format!("{m} min"),
+        (m, s) => format!("{m} min {s} s"),
+    }
+}
+
 /// The weight that bare repetitions (`12 10 8`) use.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DefaultLoad {
@@ -133,10 +186,23 @@ pub enum DefaultLoad {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SetItem {
-    /// `12`, `12^3`, `12/11`
-    Bare { reps: Reps, times: u32 },
-    /// `12x63kg`, `39kgx12`, `12x63kg^2`
-    Explicit { reps: Reps, load: Load, times: u32 },
+    /// `12`, `12^3`, `12/11`, or a hold `60s`, `60s^2`
+    Bare { effort: Effort, times: u32 },
+    /// `12x63kg`, `39kgx12`, `12x63kg^2`, or a hold `60sx20kg`, `20kgx60s^2`
+    Explicit { effort: Effort, load: Load, times: u32 },
+}
+
+impl SetItem {
+    pub fn effort(&self) -> Effort {
+        match *self {
+            SetItem::Bare { effort, .. } | SetItem::Explicit { effort, .. } => effort,
+        }
+    }
+    pub fn times(&self) -> u32 {
+        match *self {
+            SetItem::Bare { times, .. } | SetItem::Explicit { times, .. } => times,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -251,28 +317,31 @@ pub enum Line {
 /// One performed set, with the total load actually moved.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct WorkSet {
-    pub reps: Reps,
+    pub effort: Effort,
     pub load: Load,
 }
 
 impl WorkSet {
-    /// reps × load in kg; `None` for body-weight sets. With per-side reps
-    /// (`12/11`) the load covers both sides, so each rep moves half of it.
+    /// reps × load in kg; `None` for body-weight sets and for timed sets
+    /// (a hold moves no volume). With per-side reps (`12/11`) the load
+    /// covers both sides, so each rep moves half of it.
     pub fn volume_kg(&self) -> Option<f64> {
         if self.load.bodyweight {
             return None;
         }
-        let reps = match self.reps {
-            Reps::Both(n) => n as f64,
-            Reps::PerSide { left, right } => (left + right) as f64 / 2.0,
+        let reps = match self.effort {
+            Effort::Reps(Reps::Both(n)) => n as f64,
+            Effort::Reps(Reps::PerSide { left, right }) => (left + right) as f64 / 2.0,
+            Effort::Hold { .. } => return None,
         };
         Some(reps * self.load.mass.as_kg())
     }
 }
 
 impl fmt::Display for WorkSet {
+    /// `12x63kg`, `60sxbw`
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}x{}", self.reps, self.load)
+        write!(f, "{}x{}", self.effort, self.load)
     }
 }
 

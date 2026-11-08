@@ -155,6 +155,6 @@ fn expanded_kg(src: &str) -> Vec<(u32, f64)> {
     ex.expand()
         .unwrap()
         .iter()
-        .map(|s| (s.reps.total(), s.load.mass.as_kg()))
+        .map(|s| (s.effort.reps(), s.load.mass.as_kg()))
         .collect()
 }

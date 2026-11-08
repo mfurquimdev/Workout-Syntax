@@ -68,7 +68,9 @@ initial = ${ plus ~ mass }
 // and src/parser.rs warns about it.
 sides   = { ^"x2" | ^"2x" }
 
-body = { cardio | strength }
+// Cardio is tried first and kept only when it reaches the end of the line,
+// so `60s 45s^2` falls through to strength (timed sets).
+body = { cardio ~ &(trailer ~ EOI) | strength }
 
 // ---------- loads ----------
 mass        = ${ number ~ mass_unit }
@@ -83,11 +85,16 @@ default_load = { incremental | bodyweight | mass }
 // ---------- strength sets ----------
 //  default weight first:   23kg 10 10 8     63kg++5lbs 12^3 8
 //  explicit sets:          12x63kg^2        39kgx12        12/11x15kg
+//  timed sets (holds):     bw 60s^2         30kg 40s^3     60sx20kg  20kgx1m30s
 //  once an explicit set appears, no bare reps may follow (checked when
-//  expanding, see tla/SetExpansion.tla)
+//  expanding, see tla/SetExpansion.tla). A line holds either reps or
+//  timed sets, never both (checked in src/parser.rs).
+//  `body` tries cardio first, so durations alone (`20min`, `60s 45s`)
+//  stay cardio; holds are sets after a load or `bw`, or when a hold has
+//  `^`/`*` or an explicit load (`60sx20kg`).
 strength = { default_load ~ (sp ~ sides ~ boundary)? ~ sp ~ set_list | set_list }
 set_list = { set_item ~ (sp ~ set_item)* }
-set_item = _{ explicit_set ~ boundary | bare_set ~ boundary }
+set_item = _{ explicit_set ~ boundary | explicit_hold ~ boundary | hold_set ~ boundary | bare_set ~ boundary }
 
 explicit_set = ${ (reps ~ by ~ set_load | mass ~ by ~ reps) ~ repeat? }
 by           = { ^"x" }
@@ -96,6 +103,11 @@ bare_set     = ${ reps ~ repeat? }
 reps         = ${ per_side | count }
 per_side     = ${ count ~ side_sep ~ count }
 repeat       = ${ repeat_op ~ count }
+
+// A timed set: a hold time in the cardio forms, with no speed.
+explicit_hold = ${ (hold ~ by ~ set_load | mass ~ by ~ hold) ~ repeat? }
+hold_set      = ${ hold ~ repeat? }
+hold          = ${ clock_dur | hms }
 
 // ---------- cardio ----------
 //  1.57km  20min@4.7km/h  14m28s  11:26  4.5~15⁰

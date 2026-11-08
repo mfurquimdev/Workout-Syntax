@@ -1,0 +1,402 @@
+1	blank
+2	date
+3	strength 13x32kg, 11x36kg, 9x85lbs
+4	strength 12x40kg, 12x50kg, 10x60kg
+5	strength 10x40kg+167lbs, 12x50kg+167lbs, 12x60kg+167lbs, 10x70kg+167lbs
+6	cardio [Duration { seconds: 686, speed_kmh: None }]
+7	blank
+8	date
+9	strength 12x16kg, 10x16kg, 9x16kg
+10	strength 12x10kg, 12x10kg, 12x10kg
+11	strength 15x63kg, 12x145lbs, 10x150lbs, 9x155lbs
+12	strength 15x35lbs, 12x35lbs, 10x40lbs
+13	strength 12x30lbs, 10x30lbs, 9x30lbs
+14	cardio [Distance { km: 1.82 }, Duration { seconds: 900, speed_kmh: None }]
+15	blank
+16	date
+17	error unrecognised token `12x54`
+18	strength 10x36kg, 8x36kg, 6x36kg
+19	strength 12x40kg, 12x40kg, 10x40kg
+20	strength 18x54kg, 16x54kg, 14x54kg
+21	strength 12x30lbs, 12x30lbs
+22	cardio [Duration { seconds: 355, speed_kmh: None }, Distance { km: 0.57 }]
+23	blank
+24	date
+25	strength 10x23kg, 8x23kg, 6x23kg
+26	strength 12x30lbs, 12x30lbs, 10x30lbs, 10x30lbs
+27	strength 12x35lbs, 10x35lbs, 10x35lbs
+28	strength 12x40kg, 10x40kg, 8x40kg
+29	empty
+30	blank
+31	date
+32	time
+33	strength 12x90lbs, 12x92.5lbs, 11x95lbs, 10x97.5lbs
+34	strength 12x63kg, 12x145lbs, 9x150lbs, 9x155lbs
+35	strength 10x30kg, 10x30kg, 9x30kg
+36	blank
+37	date
+38	time
+39	strength 12x16kg, 10x16kg, 9x16kg
+40	error unrecognised token `12xb`
+41	strength 12x10kg, 12x10kg, 12x10kg
+42	error unrecognised token `12x54`
+43	strength 15x22kg, 15x27kg, 15x27kg
+44	blank
+45	date
+46	time
+47	strength 12x36kg, 9x36kg
+48	strength 12x63kg, 9x63kg
+49	strength 12x90lbs, 12x92.5lbs
+50	strength 10x23kg, 10x23kg
+51	strength 20x54kg, 16x54kg
+52	cardio [Distance { km: 1.2 }, Duration { seconds: 720, speed_kmh: Some(6.0) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+53	blank
+54	date
+55	time
+56	strength 12x90lbs, 12x92.5lbs, 12x95lbs
+57	strength 12x63kg, 12x145lbs, 10x150lbs, 9x155lbs
+58	strength 15x90lbs, 10x92.5lbs, 9x95lbs
+59	strength 10x60lbs, 12x55lbs
+60	strength 10x36kg, 10x32kg, 8x32kg
+61	strength 20x54kg, 18x54kg, 20x54kg
+62	blank
+63	date
+64	time
+65	strength 15x40kg, 12x50kg, 12x50kg
+66	strength 12x40kg, 12x50kg, 10x50kg
+67	strength 12x35lbs, 12x35lbs, 12x35lbs
+68	strength 12x30lbs, 10x30lbs, 10x30lbs
+69	cardio [Distance { km: 1.4 }, Duration { seconds: 868, speed_kmh: Some(6.0) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+70	blank
+71	date
+72	time
+73	strength 15x90lbs, 12x92.5lbs, 12x95lbs
+74	strength 12x63kg, 10x145lbs, 10x150lbs, 10x155lbs
+75	strength 12x90lbs, 12x92.5lbs, 12x95lbs
+76	strength 12x36kg, 10x82.5lbs, 8x85lbs
+77	strength 20x54kg, 20x54kg, 20x54kg
+78	blank
+79	date
+80	time
+81	strength 12x36kg, 7x82.5lbs, 7x82.5lbs, 7x82.5lbs
+82	strength 12x90lbs, 12x92.5lbs, 12x95lbs, 10x97.5lbs
+83	strength 12x55lbs, 12x55lbs, 12x55lbs
+84	strength 15x90lbs, 15x92.5lbs, 12x95lbs, 12x97.5lbs
+85	strength 10x63kg, 10x145lbs, 8x150lbs, 7x155lbs
+86	strength 10x23kg, 7x23kg, 6x23kg
+87	strength 24x54kg, 20x54kg, 18x54kg
+88	blank
+89	date
+90	time
+91	strength 12x40kg, 12x40kg, 12x40kg, 12x40kg
+92	strength 12x50kg, 10x50kg, 10x50kg, 10x50kg
+93	strength 12x39kg, 12x39kg, 12x39kg
+94	strength 12x39kg, 12x90lbs, 12x95lbs
+95	error unrecognised token `10xx20kg^2`
+96	cardio [Distance { km: 1.4 }, Duration { seconds: 861, speed_kmh: Some(6.0) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+97	blank
+98	date
+99	time
+100	strength 12x16kg, 10x16kg, 9x16kg
+101	strength 12x10kg, 12x10kg, 12x10kg
+102	strength 15x22kg, 12x32kg, 10x42kg
+103	strength 12x30lbs, 12x30lbs, 12x30lbs
+104	strength 10x35lbs, 10x35lbs, 10x35lbs
+105	strength 12xbw, 8xbw, 5xbw
+106	cardio [Distance { km: 2.0 }, Duration { seconds: 1200, speed_kmh: Some(6.0) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+107	blank
+108	date
+109	time
+110	strength 12x55lbs, 12x55lbs, 12x55lbs
+111	strength 12x63kg, 12x63kg+5lbs, 12x63kg+10lbs, 8x63kg+15lbs
+112	strength 12x90lbs, 15x92.5lbs, 15x95lbs, 15x97.5lbs
+113	strength 10x23kg, 10x23kg, 8x23kg
+114	strength 10x36kg, 8x36kg+2.5lbs, 6x82.5lbs
+115	strength 12x90lbs, 12x92.5lbs, 12x95lbs, 12x97.5lbs
+116	strength 24x54kg, 20x54kg, 18x54kg
+117	blank
+118	date
+119	time
+120	error unrecognised token `12x35xlbs`
+121	strength 12x35lbs, 12x35lbs, 8x35lbs
+122	error unrecognised token `12x39kg**3`
+123	strength 12x32kg, 12x32kg, 9x32kg
+124	strength 15x22kg, 15x27kg, 15x32kg, 8x37kg, 8x42kg, 0x47kg
+125	error unrecognised token `15x0kg`
+126	cardio [Distance { km: 2.0 }, Duration { seconds: 1200, speed_kmh: Some(6.0) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+127	blank
+128	date
+129	time
+130	strength 15x90lbs, 15x90lbs, 15x90lbs, 15x100lbs
+131	strength 15x50lbs, 15x52.5lbs, 15x55lbs
+132	strength 15x36kg, 10x36kg+2.5lbs
+133	strength 15x90lbs, 13x92.5lbs, 12x95lbs, 10x97.5lbs
+134	strength 11x23kg, 12x23kg, 12x23kg
+135	cardio [Distance { km: 3.0 }, Duration { seconds: 1800, speed_kmh: Some(6.0) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+136	blank
+137	date
+138	time
+139	strength 12x40kg, 12x40kg, 15x40kg
+140	strength 12x40kg, 12x50kg, 9x55kg
+141	strength 12x40kg, 12x40kg, 12x40kg
+142	cardio [Distance { km: 4.0 }, Duration { seconds: 2400, speed_kmh: Some(6.0) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+143	blank
+144	date
+145	time
+146	strength 12x63kg, 12x63kg+5lbs, 12x63kg+10lbs, 12x63kg+15lbs
+147	strength 11x16kg, 12x14kg, 12x14kg, 12x14kg
+148	strength 12x10kg, 10x10kg, 9x10kg
+149	cardio [Distance { km: 2.0 }, Duration { seconds: 1200, speed_kmh: Some(6.0) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+150	blank
+151	date
+152	time
+153	strength 15x22kg, 15x27kg, 15x32kg, 10x37kg, 8x42kg, 2x47kg
+154	strength 8x22kg, 8x27kg, 6x32kg
+155	strength 12x35lbs, 12x35lbs, 8x35lbs
+156	strength 12x35lbs, 12x35lbs, 12x35lbs
+157	cardio [Distance { km: 2.0 }, Duration { seconds: 1200, speed_kmh: Some(6.0) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+158	blank
+159	date
+160	time
+161	strength 12xbw, 12xbw, 12xbw
+162	strength 9xbw, 7xbw, 7xbw
+163	strength 24x59kg, 22x59kg, 22x59kg
+164	strength 12x23kg, 12x23kg, 8x23kg
+165	strength 12xbw, 8xbw, 6xbw
+166	cardio [Distance { km: 2.0 }, Duration { seconds: 1200, speed_kmh: Some(6.0) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+167	blank
+168	date
+169	time
+170	strength 12x72kg, 10x72kg+5lbs, 10x72kg+10lbs, 9x72kg+15lbs
+171	strength 12x60lbs, 10x62.5lbs, 10x65lbs, 10x67.5lbs
+172	strength 12/12x30kg, 12/12x30kg, 10/10x30kg
+173	strength 12x23kg, 12x23kg, 12x23kg
+174	strength 16x100lbs, 15x102.5lbs, 14x105lbs, 12x107.5lbs
+175	cardio [Distance { km: 2.0 }, Duration { seconds: 1200, speed_kmh: Some(6.0) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+176	blank
+177	date
+178	time
+179	strength 15x40kg, 12x50kg, 9x60kg
+180	strength 12x35lbs, 12x35lbs, 9x35lbs
+181	strength 15x35lbs, 12x35lbs, 9x35lbs
+182	strength 12x85lbs, 12x85lbs, 12x85lbs
+183	cardio [Distance { km: 2.1 }, Duration { seconds: 1200, speed_kmh: Some(6.0) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+184	blank
+185	date
+186	time
+187	strength 12x36kg, 10x36kg+2.5lbs, 8x36kg+5lbs, 6x36kg+7.5lbs
+188	strength 15x90lbs, 15x92.5lbs, 15x95lbs, 15x97.5lbs
+189	strength 12x23kg, 9x23kg, 10x23kg
+190	strength 15x60lbs, 15x62.5lbs, 12x65lbs, 12x67.5lbs
+191	strength 9x72kg, 9x72kg+5lbs, 9x72kg+10lbs, 9x72kg+15lbs
+192	cardio [Distance { km: 2.0 }, Duration { seconds: 1200, speed_kmh: Some(6.0) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+193	blank
+194	date
+195	time
+196	strength 15x100lbs, 15x102.5lbs, 15x105lbs, 14x107.5lbs
+197	strength 15x39kg, 15x39kg+5lbs, 9x39kg+10lbs
+198	strength 15x39kg, 15x39kg+5lbs, 9x39kg+10lbs
+199	strength 15x72kg, 12x72kg+5lbs, 9x72kg+10lbs, 9x72kg+15lbs
+200	strength 15xbw, 12xbw, 9xbw
+201	cardio [Distance { km: 2.0 }, Duration { seconds: 1200, speed_kmh: Some(6.0) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+202	blank
+203	date
+204	time
+205	strength 12x90lbs, 15x60lbs, 15x70lbs
+206	strength 15x36kg, 12x36kg+2.5lbs, 8x36kg+5lbs, 5x36kg+7.5lbs
+207	strength 15x90lbs, 13x92.5lbs, 12x95lbs, 11x97.5lbs
+208	strength 24x59kg, 24x59kg, 24x59kg
+209	strength 12x23kg, 12x23kg, 10x23kg
+210	cardio [Distance { km: 2.0 }, Duration { seconds: 1200, speed_kmh: Some(6.0) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+211	blank
+212	date
+213	time
+214	strength 12x16kg, 12x16kg, 12x16kg
+215	strength 12x10kg, 12x10kg, 12x10kg
+216	strength 30x22kg, 20x27kg, 15x32kg, 9x37kg, 5x42kg, 4x47kg, 1x52kg
+217	cardio [Distance { km: 2.0 }, Duration { seconds: 1200, speed_kmh: Some(6.0) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+218	blank
+219	date
+220	time
+221	strength 15x39kg, 14x39kg+5lbs, 10x39kg+10lbs
+222	strength 15x39kg, 14x39kg+5lbs, 11x39kg+10lbs
+223	strength 12x39kg, 12x39kg+5lbs, 9x39kg+10lbs
+224	strength 15x40kg, 10x45kg, 8x50kg
+225	cardio [Distance { km: 2.0 }, Duration { seconds: 1200, speed_kmh: Some(6.0) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+226	blank
+227	date
+228	time
+229	strength 15x70lbs, 15x72.5lbs, 13x75lbs, 9x77.5lbs
+230	strength 15x90lbs, 13x92.5lbs, 10x95lbs, 10x97.5lbs
+231	strength 15x100lbs, 15x102.5lbs, 14x105lbs, 12x107.5lbs
+232	strength 15x72kg, 8x72kg+5lbs, 7x72kg+10lbs, 6x72kg+15lbs
+233	cardio [Distance { km: 2.0 }, Duration { seconds: 1200, speed_kmh: Some(6.0) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+234	blank
+235	date
+236	time
+237	strength 12x16kg, 12x16kg, 12x16kg
+238	strength 12xbw, 12xbw, 12xbw
+239	strength 8xbw, 6xbw, 5xbw
+240	strength 15x35lbs, 12x35lbs, 8x35lbs
+241	strength 15x35lbs, 14x35lbs
+242	strength 15x23kg, 15x23kg, 10x23kg
+243	cardio [Distance { km: 2.0 }, Duration { seconds: 1200, speed_kmh: Some(6.0) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+244	blank
+245	date
+246	time
+247	strength 15x70lbs, 15x72.5lbs, 15x75lbs, 10x77.5lbs
+248	strength 15x90lbs, 15x92.5lbs, 13x95lbs, 11x97.5lbs
+249	strength 9x36kg
+250	cardio [Distance { km: 2.0 }, Duration { seconds: 1200, speed_kmh: Some(6.0) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+251	blank
+252	date
+253	time
+254	strength 15x70lbs, 15x72.5lbs, 15x75lbs, 15x77.5lbs
+255	strength 15x36kg, 12x36kg+2.5lbs, 11x36kg+5lbs, 8x36kg+7.5lbs
+256	strength 15x40kg, 15x45kg, 10x50kg, 9x55kg
+257	strength 12xbw, 9xbw
+258	strength 7xbw
+259	strength 15x23kg, 12x23kg
+260	cardio [Distance { km: 2.0 }, Duration { seconds: 1200, speed_kmh: Some(6.0) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+261	blank
+262	date
+263	time
+264	strength 12x80kg+167lbs, 12x90kg+167lbs, 9x100kg+167lbs
+265	strength 20x22kg, 15x27kg, 12x32kg, 9x37kg, 6x42kg, 0x47kg
+266	strength 10x23kg, 10x23kg
+267	blank
+268	date
+269	strength 12xbw, 12xbw
+270	strength 6xbw, 6xbw
+271	strength 12x40kg, 12x45kg, 8x50kg, 6x55kg
+272	strength 12xbw, 9xbw
+273	cardio [Distance { km: 0.5 }, Duration { seconds: 300, speed_kmh: Some(6.0) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+274	blank
+275	date
+276	time
+277	strength 15x70lbs, 15x72.5lbs, 15x75lbs, 15x77.5lbs
+278	strength 12x80kg+167lbs, 11x80kg+167lbs, 9x80kg+167lbs
+279	strength 15x100lbs, 15x110lbs, 12x120lbs, 10x130lbs
+280	strength 15x40kg, 15x45kg, 12x50kg, 7x55kg
+281	cardio [Distance { km: 2.0 }, Duration { seconds: 1200, speed_kmh: Some(6.0) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+282	blank
+283	date
+284	time
+285	strength 15x100lbs, 15x102.5lbs, 15x105lbs
+286	strength 15x36kg, 12x36kg+2.5lbs, 8x36kg+5lbs, 8x36kg+7.5lbs
+287	strength 15x90lbs, 12x92.5lbs, 12x95lbs, 12x97.5lbs
+288	label
+289	strength 15x39kg, 12x39kg+5lbs, 9x39kg+10lbs
+290	strength 15x39kg, 12x39kg+5lbs, 10x39kg+10lbs
+291	cardio [Distance { km: 2.3 }, Duration { seconds: 1440, speed_kmh: Some(5.6) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+292	blank
+293	date
+294	time
+295	strength 15x72kg, 14x72kg+5lbs, 12x72kg+10lbs, 12x72kg+15lbs
+296	strength 15x39kg, 15x39kg+5lbs, 12x39kg+10lbs
+297	strength 12x23kg, 12x23kg, 12x23kg
+298	cardio [Distance { km: 0.9 }, Duration { seconds: 540, speed_kmh: Some(6.0) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+299	blank
+300	date
+301	time
+302	strength 12x40kg, 12x40kg, 12x40kg, 12x40kg
+303	label
+304	strength 12x35lbs, 12x35lbs, 12x35lbs
+305	strength 12x35lbs, 6x35lbs, 6x35lbs
+306	strength 12x23kg, 12x23kg, 12x23kg, 12x23kg
+307	cardio [Distance { km: 0.9 }, Duration { seconds: 540, speed_kmh: Some(6.0) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+308	blank
+309	date
+310	time
+311	strength 12x72kg, 12x72kg+5lbs, 12x72kg+10lbs, 12x72kg+15lbs
+312	label
+313	strength 12x39kg, 12x39kg+5lbs, 12x39kg+10lbs
+314	strength 12x39kg, 12x39kg+5lbs, 12x39kg+10lbs
+315	cardio [Distance { km: 2.0 }, Duration { seconds: 1200, speed_kmh: Some(6.0) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+316	blank
+317	date
+318	time
+319	strength 12x72kg, 12x72kg+5lbs, 12x72kg+10lbs, 12x72kg+15lbs
+320	strength 12x90lbs, 12x92.5lbs, 12x95lbs, 12x97.5lbs
+321	strength 12x36kg, 12x36kg+2.5lbs, 12x36kg+5lbs, 12x36kg+7.5lbs
+322	cardio [Distance { km: 2.3 }, Duration { seconds: 1440, speed_kmh: Some(5.6) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+323	blank
+324	blank
+325	date
+326	time
+327	strength 12x16kg, 12x16kg, 12x16kg
+328	label
+329	strength 12x35lbs, 12x35lbs, 12x35lbs
+330	strength 12x35lbs, 12x35lbs, 12x35lbs
+331	strength 12x10kg, 12x10kg, 12x10kg
+332	cardio [Distance { km: 2.3 }, Duration { seconds: 1440, speed_kmh: Some(5.6) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+333	blank
+334	date
+335	time
+336	strength 15x100lbs, 15x102.5lbs, 15x105lbs, 15x107.5lbs
+337	strength 15x70lbs, 15x72.5lbs, 15x75lbs, 15x77.5lbs
+338	label
+339	strength 12x39kg, 12x39kg+5lbs, 12x39kg+10lbs
+340	strength 12x39kg, 12x39kg+5lbs, 12x39kg+10lbs
+341	cardio [Distance { km: 2.3 }, Duration { seconds: 1440, speed_kmh: Some(5.6) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+342	blank
+343	date
+344	time
+345	strength 15x70lbs, 15x72.5lbs, 15x75lbs, 15x77.5lbs
+346	strength 12x45kg, 12x45kg+5lbs, 12x45kg+10lbs
+347	strength 9x41kg, 9x41kg+2.5lbs, 9x41kg+5lbs
+348	strength 12x23kg, 12x23kg, 12x23kg
+349	error unrecognised token `km`
+350	blank
+351	date
+352	time
+353	strength 9x41kg, 9x41kg+2.5lbs, 9x41kg+5lbs
+354	strength 9x60kg, 9x60kg, 9x60kg
+355	strength 9x100lbs, 9x102.5lbs, 9x105lbs
+356	cardio [Distance { km: 2.0 }, Duration { seconds: 1200, speed_kmh: Some(6.0) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+357	blank
+358	date
+359	time
+360	label
+361	strength 12x16kg, 12x16kg, 12x16kg
+362	strength 12x8kg, 12x8kg, 12x8kg
+363	label
+364	strength 9x39kg, 9x39kg+5lbs, 9x39kg+10lbs
+365	strength 9x39kg, 9x39kg+5lbs, 9x39kg+10lbs
+366	strength 12x23kg, 12x23kg, 12x23kg
+367	cardio [Distance { km: 0.9 }, Duration { seconds: 660, speed_kmh: Some(4.9) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+368	blank
+369	date
+370	time
+371	strength 12x110lbs, 12x112.5lbs, 12x115lbs, 12x117.5lbs
+372	strength 12x80lbs, 12x82.5lbs, 12x85lbs, 12x87.5lbs
+373	strength 9x41kg, 9x41kg+2.5lbs, 9x41kg+5lbs, 9x41kg+7.5lbs
+374	strength 12x110lbs, 12x112.5lbs, 9x115lbs, 9x117.5lbs
+375	cardio [Distance { km: 1.57 }, Duration { seconds: 1200, speed_kmh: Some(4.7) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+376	blank
+377	date
+378	time
+379	label
+380	strength 12x39kg, 12x39kg+5lbs, 12x39kg+10lbs
+381	strength 12x39kg, 12x39kg+5lbs, 12x39kg+10lbs
+382	strength 12x39kg, 12x39kg, 12x39kg
+383	strength 12x32kg, 12x32kg, 12x32kg
+384	strength 12xbw-36kg, 12xbw-36kg, 12xbw-36kg
+385	cardio [Distance { km: 1.57 }, Duration { seconds: 1200, speed_kmh: Some(4.7) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+386	blank
+387	date
+388	time
+389	strength 12xbw, 12xbw, 12xbw
+390	strength 9xbw, 6xbw, 6xbw
+391	strength 12xbw, 9xbw, 9xbw
+392	cardio [Distance { km: 1.57 }, Duration { seconds: 1200, speed_kmh: Some(4.7) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]
+393	blank
+394	date
+395	time
+396	strength 12x110lbs, 12x112.5lbs, 12x115lbs, 12x117.5lbs
+397	strength 9x72kg, 9x72kg+5lbs, 9x72kg+10lbs, 9x72kg+15lbs
+398	strength 12x40kg, 12x45kg, 12x50kg, 12x55kg, 12x60kg
+399	label
+400	strength 12x35lbs, 12x35lbs
+401	strength 12x35lbs, 12x35lbs
+402	cardio [Distance { km: 1.57 }, Duration { seconds: 1200, speed_kmh: Some(4.7) }, Range { from: 4.5, to: 15.0, unit: Some("⁰") }]

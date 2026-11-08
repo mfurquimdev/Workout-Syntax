@@ -8,6 +8,9 @@
 //! - A line with a duration but no distance gets a warning. When every
 //!   duration carries a speed, the distance is time × speed, offered as a
 //!   quick fix inserted before the first duration.
+//! - A line of durations alone in seconds (`- Plank 60s 45s`) is cardio,
+//!   since `body` tries cardio first; both messages above then suggest
+//!   writing the load first (`bw 60s 45s`) to make them timed sets.
 //! - [`summary`] gives a line's total time, distance and pace for hover
 //!   and the outline.
 
@@ -48,8 +51,11 @@ pub fn several_durations(text: &str, body: &Body) -> Option<(usize, usize, Strin
     let (first, last) = (*tokens.first()?, *tokens.last()?);
     let written: Vec<String> = tokens.iter().map(|t| format!("`{}`", word(*t))).collect();
     let has_distance = metrics.iter().any(|m| matches!(m, CardioMetric::Distance { .. }));
+    let words: Vec<String> = tokens.iter().map(|t| word(*t)).collect();
     let advice = if has_distance {
         "keep one and correct the line".to_string()
+    } else if let Some(sets) = timed_sets(metrics, &words) {
+        format!("for timed sets, write the load first, such as `bw {sets}`; for cardio, keep one and correct the line")
     } else {
         // `5min 20min` → `5km 20min`: the first duration's number as km
         let lead: String = word(first).chars().take_while(|c| c.is_ascii_digit() || *c == '.').collect();
@@ -84,7 +90,12 @@ pub fn missing_distance(text: &str, body: &Body) -> Option<MissingDistance> {
         (Some(first), Some(last)) => (first.0, last.1),
         _ => content_columns(text),
     };
-    let plain = |columns| Some(MissingDistance { columns, message: "no distance".into(), fix: None });
+    let words: Vec<String> = tokens.iter().map(|&(s, e)| text.chars().skip(s).take(e - s).collect()).collect();
+    let message = match timed_sets(metrics, &words) {
+        Some(sets) => format!("no distance; for a timed set, write the load first, such as `bw {sets}`"),
+        None => "no distance".into(),
+    };
+    let plain = |columns| Some(MissingDistance { columns, message, fix: None });
 
     let mut km = 0.0;
     let mut parts = Vec::new();
@@ -170,6 +181,20 @@ pub fn summary(body: &Body) -> Option<CardioSummary> {
         (None, None) => (None, false),
     };
     (seconds > 0 || km.is_some()).then_some(CardioSummary { seconds, km, from_speed })
+}
+
+/// The durations written as timed sets would be (`60s 45s`), when the line
+/// looks like holds rather than cardio: only durations, each in seconds
+/// alone (`60s`, `45sec`) with no speed. A time in minutes is left alone,
+/// since `5min` is the usual typo for `5km` on a treadmill.
+fn timed_sets(metrics: &[CardioMetric], words: &[String]) -> Option<String> {
+    let only_durations = metrics.iter().all(|m| matches!(m, CardioMetric::Duration { speed_kmh: None, .. }));
+    let seconds = |w: &String| {
+        let w = w.to_ascii_lowercase();
+        let n = w.chars().take_while(|c| c.is_ascii_digit()).count();
+        n > 0 && matches!(&w[n..], "s" | "sec")
+    };
+    (only_durations && !words.is_empty() && words.iter().all(seconds)).then(|| words.join(" "))
 }
 
 /// `x` rounded to 2 decimals without trailing zeros: `1.57`, `1.5`, `2`.
