@@ -42,7 +42,7 @@ fn leap_year_boundaries() {
     assert_eq!(only("2026-02-29").message, "2026-02-29 is not a real date: February 2026 has 28 days");
     assert_eq!(only("2100-02-29").message, "2100-02-29 is not a real date: February 2100 has 28 days");
     assert_eq!(only("2028-02-30").message, "2028-02-30 is not a real date: February 2028 has 29 days");
-    assert!(diags("2026-12-31\n2027-01-31\n2027-04-30").is_empty());
+    assert!(diags("2026-12-31\n\n2027-01-31\n\n2027-04-30").is_empty());
 }
 
 #[test]
@@ -73,7 +73,7 @@ fn an_impossible_date_closes_the_open_super_set() {
 
 #[test]
 fn earlier_date_warning_is_kept() {
-    let d = parse_document("2026-11-07\n2026-11-01\n").diagnostics;
+    let d = parse_document("2026-11-07\n\n2026-11-01\n").diagnostics;
     assert_eq!(d.len(), 1);
     assert_eq!(d[0].message, "date 2026-11-01 is earlier than the previous session 2026-11-07");
 }

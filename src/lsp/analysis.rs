@@ -104,12 +104,38 @@ pub fn diagnostics(text: &str) -> Vec<Diagnostic> {
 
 // ---------- code actions ----------
 
+/// Title of the code action that adds every missing blank line before a
+/// session at once.
+pub const FIX_ALL_BLANK_LINES: &str = "Add an empty line before every session";
+
+fn edit_action(uri: &Uri, title: String, edits: Vec<TextEdit>, preferred: bool) -> CodeActionOrCommand {
+    CodeActionOrCommand::CodeAction(CodeAction {
+        title,
+        kind: Some(CodeActionKind::QUICKFIX),
+        edit: Some(WorkspaceEdit { changes: Some([(uri.clone(), edits)].into_iter().collect()), ..Default::default() }),
+        is_preferred: Some(preferred),
+        ..Default::default()
+    })
+}
+
 /// Quick fixes for the diagnostics that carry a [`crate::Fix`], such as
 /// writing `Kg` as `kg`, on the lines `range` covers.
+///
+/// When any session in the document starts right after a non-blank line,
+/// one more action, [`FIX_ALL_BLANK_LINES`], inserts all the missing blank
+/// lines in one edit. It is offered for any range, as it acts on the
+/// whole document, and its kind is `quickfix` so that editors list it
+/// next to the one-line fix (a `source.fixAll` action is only shown on
+/// request or run on save).
 pub fn code_actions(text: &str, uri: &Uri, range: Range) -> Vec<CodeActionOrCommand> {
     let lines: Vec<&str> = text.lines().collect();
     let mut out = Vec::new();
+    let mut blank_lines = Vec::new();
     for d in parse_document(text).diagnostics {
+        if d.is_missing_blank_line() {
+            let at = Position::new(d.line as u32 - 1, 0);
+            blank_lines.push(TextEdit { range: Range::new(at, at), new_text: "\n".into() });
+        }
         let row = d.line as u32 - 1;
         let Some(fix) = d.fix else { continue };
         if row < range.start.line || row > range.end.line {
@@ -122,17 +148,11 @@ pub fn code_actions(text: &str, uri: &Uri, range: Range) -> Vec<CodeActionOrComm
                 Position::new(row, utf16(line, fix.columns.1)),
             );
             let edit = TextEdit { range: r, new_text: fix.text };
-            out.push(CodeActionOrCommand::CodeAction(CodeAction {
-                title: fix.title,
-                kind: Some(CodeActionKind::QUICKFIX),
-                edit: Some(WorkspaceEdit {
-                    changes: Some([(uri.clone(), vec![edit])].into_iter().collect()),
-                    ..Default::default()
-                }),
-                is_preferred: Some(true),
-                ..Default::default()
-            }));
+            out.push(edit_action(uri, fix.title, vec![edit], true));
         }
+    }
+    if !blank_lines.is_empty() {
+        out.push(edit_action(uri, FIX_ALL_BLANK_LINES.into(), blank_lines, false));
     }
     out
 }

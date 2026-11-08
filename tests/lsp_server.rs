@@ -217,3 +217,45 @@ fn semantic_tokens_legend_is_advertised() {
     conn.sender.send(Message::Notification(Notification { method: "exit".into(), params: Value::Null })).unwrap();
     handle.join().unwrap();
 }
+
+#[test]
+fn code_actions_add_the_empty_line_before_a_session() {
+    let mut c = Client::start();
+    let text = "2026-01-01\n- Row 12x20kg\n2026-01-02\n- Row 12x25kg\n2026-01-03\n";
+    c.open(A, 1, text);
+    let d = c.diagnostics();
+    let messages: Vec<&str> = d.diagnostics.iter().map(|d| d.message.as_str()).collect();
+    assert_eq!(
+        messages,
+        [
+            "a session starts after an empty line: add one before 2026-01-02",
+            "a session starts after an empty line: add one before 2026-01-03",
+        ]
+    );
+    let range = json!({ "start": { "line": 2, "character": 0 }, "end": { "line": 2, "character": 0 } });
+    let actions = c.request(
+        "textDocument/codeAction",
+        json!({ "textDocument": { "uri": A }, "range": range, "context": { "diagnostics": [] } }),
+    );
+    let actions = actions.as_array().unwrap();
+    assert_eq!(actions.len(), 2, "{actions:?}");
+    assert_eq!(actions[0]["title"], "Add an empty line before 2026-01-02");
+    assert_eq!(actions[0]["kind"], "quickfix");
+    let edit = &actions[0]["edit"]["changes"][A][0];
+    assert_eq!(edit["range"]["start"], json!({ "line": 2, "character": 0 }));
+    assert_eq!(edit["range"]["end"], json!({ "line": 2, "character": 0 }));
+    assert_eq!(edit["newText"], "\n");
+    assert_eq!(actions[1]["title"], "Add an empty line before every session");
+    assert_eq!(actions[1]["kind"], "quickfix");
+    let lines: Vec<&Value> = actions[1]["edit"]["changes"][A].as_array().unwrap().iter().map(|e| &e["range"]["start"]["line"]).collect();
+    assert_eq!(lines, [&json!(2), &json!(4)]);
+
+    // the editor applies the fix-all and the warnings go away
+    c.change(A, 2, "2026-01-01\n- Row 12x20kg\n\n2026-01-02\n- Row 12x25kg\n\n2026-01-03\n");
+    assert!(c.diagnostics().diagnostics.is_empty());
+    let actions = c.request(
+        "textDocument/codeAction",
+        json!({ "textDocument": { "uri": A }, "range": range, "context": { "diagnostics": [] } }),
+    );
+    assert_eq!(actions, json!([]));
+}

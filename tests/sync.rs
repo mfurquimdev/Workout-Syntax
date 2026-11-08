@@ -137,10 +137,9 @@ fn keeping_restores_the_device_sessions() {
     r.keep = true;
     let SyncReply::Merged { text, written, .. } = store.sync(&r) else { panic!() };
     assert!(written);
-    // every line comes back; the stale save also dropped the blank line
-    // between the two last sessions, and that formatting change stays
-    let lines = |t: &str| t.lines().filter(|l| !l.trim().is_empty()).map(str::to_string).collect::<Vec<_>>();
-    assert_eq!(lines(&text), lines(&synced));
+    // every line comes back, with the blank line before the restored
+    // session that the stale save dropped along with it
+    assert_eq!(text, synced);
     assert_eq!(file(&dir), text);
 }
 

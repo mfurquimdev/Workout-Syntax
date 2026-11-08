@@ -19,6 +19,13 @@
 //! output is sorted by date, joins blocks with a newline, and ends with a
 //! newline when the merged inputs do (the same three-way rule).
 //!
+//! A session starts after a blank line. When the merge adds a session to
+//! one side, moves one into date order, or puts two sessions next to each
+//! other that were not neighbours in either input, and the first of the
+//! two has no blank line after it, the merge writes one between them
+//! ([`separate`]). Sessions that neither side touched keep their
+//! separators as written, even when they have none.
+//!
 //! The merge works on one file. Each block's file can be chosen from its
 //! date alone, so monthly files can later route blocks before merging
 //! without changing these rules.
@@ -322,7 +329,7 @@ pub fn merge<'a>(base: &'a str, server: &'a str, device: &'a str, device_name: &
     for order in [&s.order, &d.order] {
         moved.extend(out_of_order(order));
     }
-    for k in moved.into_iter().filter(|k| result.contains_key(k)) {
+    for k in moved.iter().filter(|k| result.contains_key(k)) {
         notices.push(Notice::Moved { date: k.0.to_string() });
     }
     let mut counts: BTreeMap<&str, usize> = BTreeMap::new();
@@ -333,6 +340,7 @@ pub fn merge<'a>(base: &'a str, server: &'a str, device: &'a str, device_name: &
         notices.push(Notice::DuplicateDate { date: date.to_string(), count });
     }
     same_body_two_dates(&b, &s, &d, &result, &mut notices);
+    separate(&mut result, &b, &s, &d, &moved);
 
     let nl = if base.is_empty() && server.is_empty() && device.is_empty() { false } else { pick(b.nl, s.nl, d.nl) };
     let mut text = String::new();
@@ -348,6 +356,33 @@ pub fn merge<'a>(base: &'a str, server: &'a str, device: &'a str, device_name: &
         text.push('\n');
     }
     Ok(Merged { text, notices })
+}
+
+/// Puts a blank line between two sessions the merge writes next to each
+/// other when the first has none, and either session is new to one of the
+/// inputs (added by one side, absent from the base, or moved into date
+/// order), or the two were not next to each other in the server's or the
+/// device's text. Sessions next to each other as an input has them, with
+/// neither one new, are left as written, so a log whose sessions lack
+/// blank lines comes back byte for byte when nobody added or moved one.
+fn separate(result: &mut BTreeMap<Key, Out>, b: &Split, s: &Split, d: &Split, moved: &BTreeSet<Key>) {
+    let new = |k: &Key| {
+        k.1 > 0
+            && (moved.contains(k)
+                || !b.blocks.contains_key(k)
+                || !s.blocks.contains_key(k)
+                || !d.blocks.contains_key(k))
+    };
+    let adjacent: BTreeSet<(Key, Key)> =
+        [&s.order, &d.order].into_iter().flat_map(|o| o.windows(2).map(|w| (w[0], w[1]))).collect();
+    let keys: Vec<Key> = result.keys().copied().collect();
+    for w in keys.windows(2) {
+        let as_written = !new(&w[0]) && !new(&w[1]) && adjacent.contains(&(w[0], w[1]));
+        let first = result.get_mut(&w[0]).expect("a merged key");
+        if !as_written && first.sep.is_empty() && !first.content.is_empty() {
+            first.sep.push("");
+        }
+    }
 }
 
 /// The keys off one longest increasing subsequence of `order`.

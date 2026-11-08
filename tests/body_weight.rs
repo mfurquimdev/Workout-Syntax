@@ -194,7 +194,7 @@ fn impossible_date_with_a_weight_is_still_an_error() {
 
 #[test]
 fn earlier_date_warning_still_applies() {
-    let doc = parse_document("2026-11-07 82kg\n2026-11-06 81kg\n");
+    let doc = parse_document("2026-11-07 82kg\n\n2026-11-06 81kg\n");
     assert_eq!(doc.sessions.len(), 2);
     assert_eq!(doc.diagnostics.len(), 1);
     assert!(doc.diagnostics[0].message.starts_with("date 2026-11-06 is earlier"));

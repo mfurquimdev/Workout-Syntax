@@ -134,6 +134,55 @@ fn edit(text: &str, rng: &mut Rng, tag: &str, kind: Edits, in_order: bool) -> (S
     (doc.render(), sorted)
 }
 
+/// `(date, occurrence)` of each block; `None` for the preamble.
+fn block_keys(doc: &Doc) -> Vec<Option<(String, usize)>> {
+    let mut seen = std::collections::BTreeMap::new();
+    doc.sessions
+        .iter()
+        .map(|(d, _)| {
+            let d = d.clone()?;
+            let n = seen.entry(d.clone()).or_insert(0);
+            *n += 1;
+            Some((d, *n))
+        })
+        .collect()
+}
+
+fn trailing_blanks(lines: &[String]) -> usize {
+    lines.iter().rev().take_while(|l| l.trim().is_empty()).count()
+}
+
+/// `text` with the blank lines the merge adds when `text` is the only
+/// changed input: one after a block with none, when the block or the
+/// session after it is new since `base`.
+fn spaced(base: &str, text: &str) -> String {
+    let old: BTreeSet<_> = block_keys(&Doc::parse(base)).into_iter().flatten().collect();
+    let mut doc = Doc::parse(text);
+    let keys = block_keys(&doc);
+    let new = |k: &Option<(String, usize)>| k.as_ref().is_some_and(|k| !old.contains(k));
+    for i in 0..doc.sessions.len().saturating_sub(1) {
+        let lines = &mut doc.sessions[i].1;
+        let has_text = lines.iter().any(|l| !l.trim().is_empty());
+        if (new(&keys[i]) || new(&keys[i + 1])) && has_text && trailing_blanks(lines) == 0 {
+            lines.push(String::new());
+        }
+    }
+    doc.render()
+}
+
+/// Adjacent sessions in `merged` with no blank line between them although
+/// one of them is new since `base`.
+fn joined(base: &str, merged: &str) -> usize {
+    let old: BTreeSet<_> = block_keys(&Doc::parse(base)).into_iter().flatten().collect();
+    let doc = Doc::parse(merged);
+    let keys = block_keys(&doc);
+    let new = |k: &Option<(String, usize)>| k.as_ref().is_some_and(|k| !old.contains(k));
+    (0..doc.sessions.len().saturating_sub(1))
+        .filter(|&i| keys[i].is_some() && trailing_blanks(&doc.sessions[i].1) == 0)
+        .filter(|&i| new(&keys[i]) || new(&keys[i + 1]))
+        .count()
+}
+
 fn keys(text: &str) -> Vec<String> {
     text.split('\n').filter_map(date_key).map(str::to_string).collect()
 }
@@ -165,6 +214,8 @@ struct Failures {
     lost: usize,
     dup: usize,
     separators: usize,
+    /// sessions new since the base with no blank line next to a neighbour
+    joined: usize,
     /// sets the device had that the merge removed, with no deletions made
     removals: usize,
 }
@@ -190,13 +241,16 @@ fn properties(log: &str, rng: &mut Rng, n: usize) -> (Failures, usize) {
         }
         let m = mg(b, &s, &d, "phone");
         conflicts += m.matches("; conflict ").count();
-        let one_side = mg(b, &s, b, "phone") != s || sorted && mg(b, b, &d, "phone") != d;
+        // a one-sided change comes back as written, plus the blank lines
+        // that set its new sessions apart
+        let one_side = mg(b, &s, b, "phone") != spaced(b, &s) || sorted && mg(b, b, &d, "phone") != spaced(b, &d);
         bad.one_side += one_side as usize;
         bad.idempotent += (mg(b, &m, &d, "phone") != m) as usize;
         let k = keys(&m);
         bad.order += k.windows(2).any(|w| w[0] > w[1]) as usize;
         bad.dup += (k.iter().collect::<BTreeSet<_>>().len() != k.len()) as usize;
         bad.lost += lost(b, &d, &m);
+        bad.joined += joined(b, &m);
         // parsing is slow in a debug build, so 100 cases per log
         if kind != Edits::Delete && i % 30 < 3 {
             bad.removals += removals(&d, &m).len();
@@ -204,7 +258,9 @@ fn properties(log: &str, rng: &mut Rng, n: usize) -> (Failures, usize) {
         let (ss, ds) = (separators(&s), separators(&d));
         for (date, n) in separators(&m) {
             let from = |v: &[(String, usize)]| v.iter().find(|(d, _)| *d == date).map(|x| x.1);
-            if from(&ss) != Some(n) && from(&ds) != Some(n) {
+            // or the one blank line the merge adds after a session with none
+            let added = n == 1 && [from(&ss), from(&ds)].iter().all(|x| x.unwrap_or(0) == 0);
+            if from(&ss) != Some(n) && from(&ds) != Some(n) && !added {
                 bad.separators += 1;
             }
         }
