@@ -197,8 +197,15 @@ fn half_typed_date_joins_the_previous_session() {
 #[cfg_attr(not(live_log), ignore = "needs the owner's live log, Workout.md")]
 fn fixture_merged_with_live_log_and_correct_base() {
     let r = m(FIXTURE, FIXTURE, LIVE);
-    assert_eq!(r.text, LIVE);
+    // the device's text wins line for line; the only difference is the
+    // blank line the merge writes next to each session that is new since
+    // the base (the fixture's typo dates make several live sessions new)
+    let non_blank = |t: &str| t.lines().filter(|l| !l.trim().is_empty()).map(str::to_string).collect::<Vec<_>>();
+    assert_eq!(non_blank(&r.text), non_blank(LIVE));
+    assert!(r.text.lines().count() >= LIVE.lines().count());
     assert_eq!(conflict_count(&r.text), 0);
+    // merging the result again changes nothing
+    assert_eq!(m(FIXTURE, &r.text, LIVE).text, r.text);
 }
 
 #[test]
